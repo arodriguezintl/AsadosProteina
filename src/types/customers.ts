@@ -1,0 +1,25 @@
+export interface Customer {
+    id: string
+    full_name: string
+    email?: string
+    phone?: string
+    total_orders: number
+    total_spent: number
+    loyalty_points: number
+    is_active: boolean
+    created_at: string
+    updated_at: string
+}
+
+
+export interface CreateCustomerDTO {
+    full_name: string
+    email?: string
+    phone?: string
+}
+
+
+export interface UpdateCustomerDTO extends Partial<CreateCustomerDTO> {
+    is_active?: boolean
+    loyalty_points?: number
+}
