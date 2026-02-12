@@ -11,7 +11,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export default function Dashboard() {
-    const { storeId } = useAuthStore()
+    const { storeId, loading: authLoading } = useAuthStore()
     const [stats, setStats] = useState({
         dailyRevenue: 0,
         activeOrders: 0,
@@ -25,8 +25,10 @@ export default function Dashboard() {
     useEffect(() => {
         if (storeId) {
             loadDashboardData()
+        } else if (!authLoading) {
+            setLoading(false)
         }
-    }, [storeId])
+    }, [storeId, authLoading])
 
     const loadDashboardData = async () => {
         try {
@@ -90,6 +92,7 @@ export default function Dashboard() {
     }
 
     if (loading) return <div className="p-8">Cargando dashboard...</div>
+    if (!storeId) return <div className="p-8 text-asados-muted">No tienes una tienda asignada. Por favor contacta al administrador.</div>
 
     return (
         <div className="space-y-8">

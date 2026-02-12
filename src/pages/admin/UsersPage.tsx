@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/auth.store'
 
 export default function UsersPage() {
     const [users, setUsers] = useState<UserProfile[]>([])
+    const [stores, setStores] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -24,19 +25,47 @@ export default function UsersPage() {
         password: '',
         full_name: '',
         role: 'cashier' as UserRole,
-        store_id: ''
+        store_id: '',
+        modules: [] as string[]
     })
     const [passwordData, setPasswordData] = useState({
         newPassword: '',
         confirmPassword: ''
     })
 
-    const { role: currentUserRole } = useAuthStore()
-    const STORE_ID = '00000000-0000-0000-0000-000000000001'
+    const { role: currentUserRole, storeId: currentStoreId } = useAuthStore()
+
+    const AVAILABLE_MODULES: { id: string, label: string }[] = [
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'pos', label: 'Punto de Venta' },
+        { id: 'inventory', label: 'Inventario' },
+        { id: 'recipes', label: 'Recetas' },
+        { id: 'crm', label: 'Clientes (CRM)' },
+        { id: 'hr', label: 'Recursos Humanos' },
+        { id: 'finance', label: 'Finanzas' },
+        { id: 'reports', label: 'Reportes' },
+        { id: 'admin', label: 'Administración' },
+    ]
 
     useEffect(() => {
-        loadUsers()
+        loadData()
     }, [])
+
+    const loadData = async () => {
+        setLoading(true)
+        try {
+            const [usersData, storesData] = await Promise.all([
+                UserService.getUsers(),
+                UserService.getStores()
+            ])
+            setUsers(usersData)
+            setStores(storesData || [])
+        } catch (error) {
+            console.error('Error loading data:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const loadUsers = async () => {
         try {
@@ -44,8 +73,6 @@ export default function UsersPage() {
             setUsers(data)
         } catch (error) {
             console.error('Error loading users:', error)
-        } finally {
-            setLoading(false)
         }
     }
 
@@ -53,12 +80,17 @@ export default function UsersPage() {
         e.preventDefault()
         setLoading(true)
         try {
+            // Determine store_id: if super_admin uses form value, if admin uses their own store
+            const finalStoreId = currentUserRole === 'super_admin' ? formData.store_id : currentStoreId
+
             if (selectedUser) {
                 // Update existing user
                 await UserService.updateUser(selectedUser.id, {
                     full_name: formData.full_name,
                     role: formData.role,
-                    store_id: formData.store_id || null
+                    store_id: finalStoreId || null,
+                    modules: formData.modules as any,
+                    is_active: formData.role !== 'super_admin' ? true : selectedUser.is_active // Prevent deactivating super admin by mistake? No, logical keep as is.
                 })
             } else {
                 // Create new user
@@ -67,28 +99,33 @@ export default function UsersPage() {
                     password: formData.password,
                     full_name: formData.full_name,
                     role: formData.role,
-                    store_id: formData.store_id || STORE_ID
+                    store_id: finalStoreId,
+                    modules: formData.modules as any
                 })
             }
 
             setIsDialogOpen(false)
             setSelectedUser(null)
-            setFormData({
-                email: '',
-                password: '',
-                full_name: '',
-                role: 'cashier',
-                store_id: ''
-            })
+            resetForm()
             loadUsers()
         } catch (error: any) {
             const errorMessage = error?.message || 'Error al guardar usuario'
-            // Show error in alert with preserved line breaks
             alert(errorMessage)
             console.error('User creation error:', errorMessage)
         } finally {
             setLoading(false)
         }
+    }
+
+    const resetForm = () => {
+        setFormData({
+            email: '',
+            password: '',
+            full_name: '',
+            role: 'cashier',
+            store_id: currentUserRole === 'admin' ? (currentStoreId || '') : '', // Pre-fill for admin?
+            modules: []
+        })
     }
 
     const handlePasswordReset = async (e: React.FormEvent) => {
@@ -139,20 +176,15 @@ export default function UsersPage() {
             password: '',
             full_name: user.full_name,
             role: user.role,
-            store_id: user.store_id || ''
+            store_id: user.store_id || '',
+            modules: user.modules || []
         })
         setIsDialogOpen(true)
     }
 
     const openCreateUser = () => {
         setSelectedUser(null)
-        setFormData({
-            email: '',
-            password: '',
-            full_name: '',
-            role: 'cashier',
-            store_id: STORE_ID
-        })
+        resetForm()
         setIsDialogOpen(true)
     }
 
@@ -160,6 +192,17 @@ export default function UsersPage() {
         setSelectedUser(user)
         setPasswordData({ newPassword: '', confirmPassword: '' })
         setIsPasswordDialogOpen(true)
+    }
+
+    const toggleModule = (moduleId: string) => {
+        setFormData(prev => {
+            const modules = prev.modules || []
+            if (modules.includes(moduleId)) {
+                return { ...prev, modules: modules.filter(m => m !== moduleId) }
+            } else {
+                return { ...prev, modules: [...modules, moduleId] }
+            }
+        })
     }
 
     const filteredUsers = users.filter(u =>
@@ -173,13 +216,16 @@ export default function UsersPage() {
             super_admin: { color: 'bg-red-500', label: 'Super Admin' },
             admin: { color: 'bg-purple-500', label: 'Administrador' },
             manager: { color: 'bg-blue-500', label: 'Gerente' },
-            cashier: { color: 'bg-green-500', label: 'Cajero' }
+            cashier: { color: 'bg-green-500', label: 'Cajero' },
+            cook: { color: 'bg-orange-500', label: 'Cocinero' },
+            delivery: { color: 'bg-yellow-500', label: 'Repartidor' },
+            accountant: { color: 'bg-indigo-500', label: 'Contador' }
         }
-        return variants[role]
+        return variants[role] || { color: 'bg-gray-500', label: role }
     }
 
-    // Only super_admin can access this page
-    if (currentUserRole !== 'super_admin') {
+    // Allow super_admin AND admin to access page (with restrictions)
+    if (currentUserRole !== 'super_admin' && currentUserRole !== 'admin') {
         return (
             <div className="flex items-center justify-center h-screen">
                 <Card className="p-8">
@@ -206,34 +252,37 @@ export default function UsersPage() {
                             <Plus className="mr-2 h-4 w-4" /> Nuevo Usuario
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>{selectedUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
                             <DialogDescription>
-                                {selectedUser ? 'Actualiza la información del usuario' : 'Crea un nuevo usuario del sistema'}
+                                {selectedUser ? 'Actualiza la información y permisos del usuario' : 'Crea un nuevo usuario y asigna sus permisos'}
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Nombre Completo</Label>
-                                <Input
-                                    required
-                                    value={formData.full_name}
-                                    onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                                    placeholder="Ej: Juan Pérez"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Nombre Completo</Label>
+                                    <Input
+                                        required
+                                        value={formData.full_name}
+                                        onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                                        placeholder="Ej: Juan Pérez"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input
+                                        type="email"
+                                        required
+                                        disabled={!!selectedUser}
+                                        value={formData.email}
+                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="usuario@ejemplo.com"
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label>Email</Label>
-                                <Input
-                                    type="email"
-                                    required
-                                    disabled={!!selectedUser}
-                                    value={formData.email}
-                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    placeholder="usuario@ejemplo.com"
-                                />
-                            </div>
+
                             {!selectedUser && (
                                 <div className="space-y-2">
                                     <Label>Contraseña</Label>
@@ -247,21 +296,68 @@ export default function UsersPage() {
                                     />
                                 </div>
                             )}
-                            <div className="space-y-2">
-                                <Label>Rol</Label>
-                                <Select
-                                    value={formData.role}
-                                    onValueChange={(v: UserRole) => setFormData({ ...formData, role: v })}
-                                >
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="super_admin">Super Admin</SelectItem>
-                                        <SelectItem value="admin">Administrador</SelectItem>
-                                        <SelectItem value="manager">Gerente</SelectItem>
-                                        <SelectItem value="cashier">Cajero</SelectItem>
-                                    </SelectContent>
-                                </Select>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Rol</Label>
+                                    <Select
+                                        value={formData.role}
+                                        onValueChange={(v: UserRole) => setFormData({ ...formData, role: v })}
+                                    >
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {currentUserRole === 'super_admin' && <SelectItem value="super_admin">Super Admin</SelectItem>}
+                                            <SelectItem value="admin">Administrador</SelectItem>
+                                            <SelectItem value="manager">Gerente</SelectItem>
+                                            <SelectItem value="cashier">Cajero</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {currentUserRole === 'super_admin' && (
+                                    <div className="space-y-2">
+                                        <Label>Tienda</Label>
+                                        <Select
+                                            value={formData.store_id}
+                                            onValueChange={(v) => setFormData({ ...formData, store_id: v })}
+                                        >
+                                            <SelectTrigger><SelectValue placeholder="Seleccionar tienda" /></SelectTrigger>
+                                            <SelectContent>
+                                                {stores.map(store => (
+                                                    <SelectItem key={store.id} value={store.id}>
+                                                        {store.name} ({store.code})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">Requerido para roles no-admin</p>
+                                    </div>
+                                )}
                             </div>
+
+                            <div className="pt-4 border-t">
+                                <Label className="mb-2 block">Módulos Permitidos</Label>
+                                <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-gray-50/50">
+                                    {AVAILABLE_MODULES.map(module => (
+                                        <div key={module.id} className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                id={`module-${module.id}`}
+                                                checked={(formData.modules || []).includes(module.id)}
+                                                onChange={() => toggleModule(module.id)}
+                                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            />
+                                            <Label htmlFor={`module-${module.id}`} className="text-sm font-normal cursor-pointer">
+                                                {module.label}
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Estos módulos aparecerán en el menú lateral del usuario.
+                                </p>
+                            </div>
+
                             <DialogFooter>
                                 <Button type="submit" disabled={loading}>
                                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -315,7 +411,7 @@ export default function UsersPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Summary Cards */}
+            {/* User Statistics */}
             <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                     <CardContent className="p-4">
@@ -358,12 +454,12 @@ export default function UsersPage() {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-muted-foreground">Super Admins</p>
-                                <p className="text-2xl font-bold text-red-600">
-                                    {users.filter(u => u.role === 'super_admin').length}
+                                <p className="text-sm font-medium text-muted-foreground">Administradores</p>
+                                <p className="text-2xl font-bold text-purple-600">
+                                    {users.filter(u => u.role === 'admin').length}
                                 </p>
                             </div>
-                            <Shield className="h-8 w-8 text-red-500" />
+                            <Shield className="h-8 w-8 text-purple-500" />
                         </div>
                     </CardContent>
                 </Card>
@@ -389,26 +485,29 @@ export default function UsersPage() {
                                 <TableHead>Usuario</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Rol</TableHead>
+                                <TableHead>Tienda</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {loading ? (
+                            {loading && users.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
+                                    <TableCell colSpan={6} className="text-center h-24">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
                             ) : filteredUsers.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                                         No se encontraron usuarios.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 filteredUsers.map(user => {
                                     const roleBadge = getRoleBadge(user.role)
+                                    const userStore = stores.find(s => s.id === user.store_id)
+
                                     return (
                                         <TableRow key={user.id}>
                                             <TableCell className="font-medium">
@@ -416,7 +515,12 @@ export default function UsersPage() {
                                                     <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
                                                         {user.full_name.charAt(0).toUpperCase()}
                                                     </div>
-                                                    {user.full_name}
+                                                    <div>
+                                                        <div className="font-bold">{user.full_name}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {(user.modules || []).length} módulos
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -429,6 +533,15 @@ export default function UsersPage() {
                                                 <Badge className={roleBadge.color}>
                                                     {roleBadge.label}
                                                 </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                {userStore ? (
+                                                    <span className="text-sm font-medium">{userStore.name}</span>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground italic">
+                                                        {user.role === 'super_admin' ? 'Global' : 'Sin asignar'}
+                                                    </span>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant={user.is_active ? 'default' : 'secondary'} className={user.is_active ? 'bg-green-500' : ''}>

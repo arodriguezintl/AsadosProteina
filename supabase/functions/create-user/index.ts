@@ -12,6 +12,7 @@ interface CreateUserRequest {
   full_name: string
   role: 'super_admin' | 'admin' | 'manager' | 'cashier'
   store_id?: string | null
+  modules?: string[]
 }
 
 serve(async (req) => {
@@ -58,12 +59,12 @@ serve(async (req) => {
       throw new Error('Could not fetch user profile')
     }
 
-    if (profile.role !== 'super_admin') {
-      throw new Error('Only super_admin can create users')
+    if (['super_admin', 'admin'].indexOf(profile.role) === -1) {
+      throw new Error('Only super_admin or admin can create users')
     }
 
     // Parse the request body
-    const { email, password, full_name, role, store_id }: CreateUserRequest = await req.json()
+    const { email, password, full_name, role, store_id, modules }: CreateUserRequest = await req.json()
 
     // Validate input
     if (!email || !password || !full_name || !role) {
@@ -72,6 +73,17 @@ serve(async (req) => {
 
     if (password.length < 6) {
       throw new Error('Password must be at least 6 characters')
+    }
+
+    // Additional validation for admin
+    if (profile.role === 'admin') {
+      if (role === 'super_admin') {
+        throw new Error('Admins cannot create super_admins')
+      }
+      // Admins can only create users for their own store
+      if (store_id && store_id !== profile.store_id) {
+        throw new Error('Admins can only create users for their own store')
+      }
     }
 
     // Create a Supabase Admin client to create the user
@@ -104,6 +116,8 @@ serve(async (req) => {
       throw new Error('No user returned from auth creation')
     }
 
+    const finalStoreId = profile.role === 'admin' ? profile.store_id : (store_id || null)
+
     // Create the user profile
     const { data: profileData, error: insertError } = await supabaseAdmin
       .from('user_profiles')
@@ -112,7 +126,8 @@ serve(async (req) => {
         email,
         full_name,
         role,
-        store_id: store_id || null,
+        store_id: finalStoreId,
+        modules: modules || [],
         is_active: true,
       })
       .select()

@@ -12,6 +12,17 @@ export const UserService = {
         return data as UserProfile[]
     },
 
+    async getStores() {
+        const { data, error } = await supabase
+            .from('stores')
+            .select('*')
+            .eq('is_active', true)
+            .order('name')
+
+        if (error) throw error
+        return data
+    },
+
     async getUserById(id: string) {
         const { data, error } = await supabase
             .from('user_profiles')

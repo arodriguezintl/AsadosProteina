@@ -1,10 +1,10 @@
-import { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import type { ReactNode } from 'react'
+
 import { useAuthStore } from '@/store/auth.store'
 import { hasModuleAccess } from '@/config/permissions'
 import type { ModuleName } from '@/config/permissions'
 import { Card } from '@/components/ui/card'
-import { Shield } from 'lucide-react'
+import { Shield, Loader2 } from 'lucide-react'
 
 interface ProtectedModuleProps {
     module: ModuleName
@@ -20,17 +20,17 @@ interface ProtectedModuleProps {
  * </ProtectedModule>
  */
 export function ProtectedModule({ module, children, fallback }: ProtectedModuleProps) {
-    const { role, loading } = useAuthStore()
+    const { role, modules, loading } = useAuthStore()
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <div className="text-muted-foreground">Cargando...</div>
+                <Loader2 className="h-8 w-8 animate-spin" />
             </div>
         )
     }
 
-    const hasAccess = hasModuleAccess(role, module)
+    const hasAccess = hasModuleAccess(role, module, modules)
 
     if (!hasAccess) {
         if (fallback) {

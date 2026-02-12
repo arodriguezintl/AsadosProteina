@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Users, Clock, DollarSign, Search, Edit, LogIn, LogOut, Calendar } from 'lucide-react'
+import { Loader2, Plus, Users, Clock, DollarSign, Search, Edit, LogIn, LogOut, Calendar, UserCheck, UserX } from 'lucide-react'
 import { HRService } from '@/services/hr.service'
 import type { Employee, Payroll } from '@/types/hr'
 import { format } from 'date-fns'
@@ -99,6 +99,17 @@ export default function HRPage() {
             alert(`Error al guardar empleado: ${errorMessage}`)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleToggleActive = async (employee: Employee) => {
+        if (!confirm(`¿Estás seguro de que quieres ${employee.is_active ? 'desactivar' : 'activar'} a este empleado?`)) return
+
+        try {
+            await HRService.updateEmployee(employee.id, { is_active: !employee.is_active })
+            loadData()
+        } catch (error: any) {
+            alert(error?.message || 'Error al cambiar estado del empleado')
         }
     }
 
@@ -307,9 +318,20 @@ export default function HRPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => openEditEmployee(emp)}>
-                                                <Edit className="h-4 w-4 text-blue-500" />
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => openEditEmployee(emp)}>
+                                                    <Edit className="h-4 w-4 text-blue-500" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleToggleActive(emp)}
+                                                    className={emp.is_active ? 'text-red-500' : 'text-green-500'}
+                                                    title={emp.is_active ? 'Desactivar' : 'Activar'}
+                                                >
+                                                    {emp.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))

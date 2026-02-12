@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -6,19 +7,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function Login() {
     const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [usePassword, setUsePassword] = useState(true)
     const [loading, setLoading] = useState(false)
     const signIn = useAuthStore(state => state.signIn)
+    const navigate = useNavigate()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-        const { error } = await signIn(email)
-        setLoading(false)
 
-        if (error) {
-            alert('Error en login: ' + error.message)
-        } else {
-            alert('¡Revisa tu correo para el link de acceso!')
+        try {
+            console.log('Calling signIn...')
+            const result = await signIn(email, usePassword ? password : undefined)
+            console.log('signIn result:', result)
+            const { error } = result
+
+            if (error) {
+                alert('Error al ingresar: ' + error.message)
+            } else if (!usePassword) {
+                alert('¡Revisa tu correo para el link de acceso!')
+            } else {
+                // Should potentially wait for checkSession to complete via auth listener,
+                // but local navigation is good UX.
+                navigate('/dashboard')
+            }
+        } catch (err: any) {
+            alert('Error inesperado: ' + err.message)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -28,7 +45,7 @@ export default function Login() {
                 <CardHeader>
                     <CardTitle className="text-2xl text-center">Asados Proteína ERP</CardTitle>
                     <CardDescription className="text-center">
-                        Ingresa tu correo para acceder al sistema
+                        Ingresa tus credenciales para acceder
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -36,16 +53,40 @@ export default function Login() {
                         <div className="space-y-2">
                             <Input
                                 type="email"
-                                placeholder="nombre@ejemplo.com"
+                                placeholder="usuario@ejemplo.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                         </div>
+
+                        {usePassword && (
+                            <div className="space-y-2">
+                                <Input
+                                    type="password"
+                                    placeholder="Contraseña"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        )}
+
                         <Button type="submit" className="w-full" disabled={loading}>
-                            {loading ? 'Enviando link...' : 'Ingresar con Magic Link'}
+                            {loading ? 'Procesando...' : (usePassword ? 'Iniciar Sesión' : 'Enviar Magic Link')}
                         </Button>
-                        <div className="text-xs text-center text-muted-foreground">
+
+                        <div className="text-center">
+                            <button
+                                type="button"
+                                onClick={() => setUsePassword(!usePassword)}
+                                className="text-xs text-blue-600 hover:underline"
+                            >
+                                {usePassword ? 'Ingresar con Magic Link' : 'Ingresar con Contraseña'}
+                            </button>
+                        </div>
+
+                        <div className="text-xs text-center text-muted-foreground mt-4">
                             * Solo personal autorizado
                         </div>
                     </form>

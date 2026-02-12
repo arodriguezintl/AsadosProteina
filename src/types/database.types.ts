@@ -1,8 +1,16 @@
-export type UserRole = 'super_admin' | 'admin' | 'manager' | 'cashier'
+export type UserRole =
+    | 'super_admin'
+    | 'admin'
+    | 'manager'
+    | 'cashier'
+    | 'cook'
+    | 'delivery'
+    | 'accountant'
 
 export type ModuleName =
     | 'dashboard'
     | 'pos'
+    | 'orders'
     | 'inventory'
     | 'recipes'
     | 'delivery'
@@ -11,6 +19,8 @@ export type ModuleName =
     | 'payroll'
     | 'finance'
     | 'stores'
+    | 'users'
+    | 'reports'
 
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'in_delivery' | 'completed' | 'cancelled'
 export type PaymentMethod = 'cash' | 'transfer' | 'card'
@@ -24,6 +34,7 @@ export interface UserProfile {
     role: UserRole
     store_id: string | null
     is_active: boolean
+    modules?: ModuleName[]
     created_at?: string
     updated_at?: string
 }
@@ -34,6 +45,8 @@ export interface CreateUserDTO {
     full_name: string
     role: UserRole
     store_id?: string | null
+    modules?: ModuleName[]
+    is_active?: boolean
 }
 
 export interface Database {

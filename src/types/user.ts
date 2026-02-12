@@ -7,6 +7,7 @@ export interface UserProfile {
     role: UserRole
     store_id: string | null
     is_active: boolean
+    modules?: string[]
     created_at?: string
     updated_at?: string
 }
@@ -17,4 +18,5 @@ export interface CreateUserDTO {
     full_name: string
     role: UserRole
     store_id?: string | null
+    modules?: string[]
 }

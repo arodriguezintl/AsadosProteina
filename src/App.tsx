@@ -18,9 +18,11 @@ import CustomerForm from '@/pages/crm/CustomerForm'
 import ReportsPage from '@/pages/reports/ReportsPage'
 import HRPage from '@/pages/hr/HRPage'
 import UsersPage from '@/pages/admin/UsersPage'
+import StoresPage from '@/pages/admin/StoresPage'
 import Login from '@/pages/Login'
 import { useAuthStore } from '@/store/auth.store'
 import { useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, checkSession } = useAuthStore()
@@ -41,6 +43,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { checkSession } = useAuthStore()
+
+  useEffect(() => {
+    // Initial check
+    checkSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, _session) => {
+      if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') {
+        await checkSession()
+      } else if (_event === 'SIGNED_OUT') {
+        useAuthStore.getState().signOut()
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
@@ -75,6 +97,7 @@ function App() {
           <Route path="/recipes/new" element={<RecipeForm />} />
           <Route path="/recipes/:id" element={<RecipeForm />} />
           <Route path="/admin/users" element={<UsersPage />} />
+          <Route path="/admin/stores" element={<StoresPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

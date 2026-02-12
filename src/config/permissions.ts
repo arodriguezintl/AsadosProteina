@@ -11,6 +11,9 @@ export type ModuleName =
     | 'crm'
     | 'hr'
     | 'users'
+    | 'stores'
+    | 'delivery'
+    | 'payroll'
 
 export type Permission = 'view' | 'create' | 'edit' | 'delete'
 
@@ -26,7 +29,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         reports: ['view'],
         crm: ['view', 'create', 'edit', 'delete'],
         hr: ['view', 'create', 'edit', 'delete'],
-        users: ['view', 'create', 'edit', 'delete'], // Only super_admin
+        users: ['view', 'create', 'edit', 'delete'],
+        stores: ['view', 'create', 'edit', 'delete'],
+        delivery: ['view', 'create', 'edit', 'delete'],
+        payroll: ['view', 'create', 'edit', 'delete'],
     },
     admin: {
         dashboard: ['view'],
@@ -38,7 +44,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         reports: ['view'],
         crm: ['view', 'create', 'edit', 'delete'],
         hr: ['view', 'create', 'edit', 'delete'],
-        users: [], // No access
+        users: [], // No access to user management
+        stores: ['view'], // Can view store details
+        delivery: ['view', 'create', 'edit', 'delete'],
+        payroll: ['view', 'create'],
     },
     manager: {
         dashboard: ['view'],
@@ -46,31 +55,85 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         orders: ['view', 'create', 'edit'],
         inventory: ['view', 'create', 'edit'],
         recipes: ['view', 'create', 'edit'],
-        finance: ['view'], // Read-only
+        finance: ['view'],
         reports: ['view'],
         crm: ['view', 'create', 'edit'],
-        hr: ['view'], // Read-only
-        users: [], // No access
+        hr: ['view'],
+        users: [],
+        stores: ['view'],
+        delivery: ['view', 'create', 'edit'],
+        payroll: ['view'],
     },
     cashier: {
         dashboard: ['view'],
-        pos: ['view', 'create'], // Can use POS
-        orders: ['view'], // Can view orders
-        inventory: ['view'], // Can check inventory
-        recipes: ['view'], // Can view recipes
-        finance: [], // No access
-        reports: [], // No access
-        crm: ['view'], // Can view customers
-        hr: [], // No access
-        users: [], // No access
+        pos: ['view', 'create'],
+        orders: ['view'],
+        inventory: ['view'],
+        recipes: ['view'],
+        finance: [],
+        reports: [],
+        crm: ['view'],
+        hr: [],
+        users: [],
+        stores: [],
+        delivery: [],
+        payroll: [],
+    },
+    cook: {
+        dashboard: ['view'],
+        pos: [],
+        orders: ['view', 'edit'], // View orders to cook, mark as ready
+        inventory: ['view'], // Check stock
+        recipes: ['view'], // View recipes
+        finance: [],
+        reports: [],
+        crm: [],
+        hr: [],
+        users: [],
+        stores: [],
+        delivery: [],
+        payroll: [],
+    },
+    delivery: {
+        dashboard: [],
+        pos: [],
+        orders: ['view', 'edit'], // View assigned orders, update status
+        inventory: [],
+        recipes: [],
+        finance: [],
+        reports: [],
+        crm: ['view'], // View customer details for delivery
+        delivery: ['view', 'edit'], // Delivery specific module
+        hr: [],
+        users: [],
+        stores: [],
+        payroll: [],
+    },
+    accountant: {
+        dashboard: ['view'],
+        pos: [],
+        orders: ['view'],
+        inventory: ['view'],
+        recipes: ['view'],
+        finance: ['view', 'create', 'edit', 'delete'], // Full finance access
+        reports: ['view'],
+        crm: [],
+        hr: ['view'], // View payroll/employee costs
+        users: [],
+        stores: ['view'],
+        delivery: [],
+        payroll: ['view', 'create', 'edit'],
     },
 }
 
 // Helper function to check if a role has access to a module
-export function hasModuleAccess(role: UserRole | null, module: ModuleName): boolean {
+export function hasModuleAccess(role: UserRole | null, module: ModuleName, userModules?: string[]): boolean {
     if (!role) return false
-    const permissions = ROLE_PERMISSIONS[role]?.[module] || []
-    return permissions.length > 0
+
+    const roleAccess = (ROLE_PERMISSIONS[role]?.[module] || []).length > 0
+    const userAccess = userModules?.includes(module) || false
+
+    return roleAccess || userAccess
 }
 
 // Helper function to check if a role has a specific permission on a module
@@ -85,10 +148,17 @@ export function hasPermission(
 }
 
 // Get all accessible modules for a role
-export function getAccessibleModules(role: UserRole | null): ModuleName[] {
+export function getAccessibleModules(role: UserRole | null, userModules?: string[]): ModuleName[] {
     if (!role) return []
-    const permissions = ROLE_PERMISSIONS[role]
-    return Object.entries(permissions)
+
+    // Get modules from Role
+    const roleModules = Object.entries(ROLE_PERMISSIONS[role])
         .filter(([_, perms]) => perms.length > 0)
         .map(([module]) => module as ModuleName)
+
+    if (!userModules || userModules.length === 0) return roleModules
+
+    // Combine with explicit User Modules ensuring uniqueness
+    const combined = new Set([...roleModules, ...userModules])
+    return Array.from(combined) as ModuleName[]
 }

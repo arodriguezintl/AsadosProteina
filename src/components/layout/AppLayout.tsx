@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/auth.store"
 import { hasModuleAccess } from "@/config/permissions"
-import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, DollarSign, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings } from "lucide-react"
+import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, DollarSign, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store } from "lucide-react"
 import { Outlet, Link, useLocation } from "react-router-dom"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
@@ -30,23 +30,24 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false }: { to:
 }
 
 export function AppLayout() {
-    const { user, role, signOut } = useAuthStore()
+    const { user, role, modules, signOut } = useAuthStore()
 
     const handleSignOut = async () => {
         await signOut()
     }
 
     // Check permissions for each module
-    const canViewDashboard = hasModuleAccess(role, 'dashboard')
-    const canViewPOS = hasModuleAccess(role, 'pos')
-    const canViewOrders = hasModuleAccess(role, 'orders')
-    const canViewInventory = hasModuleAccess(role, 'inventory')
-    const canViewRecipes = hasModuleAccess(role, 'recipes')
-    const canViewFinance = hasModuleAccess(role, 'finance')
-    const canViewReports = hasModuleAccess(role, 'reports')
-    const canViewCRM = hasModuleAccess(role, 'crm')
-    const canViewHR = hasModuleAccess(role, 'hr')
-    const canViewUsers = hasModuleAccess(role, 'users')
+    const canViewDashboard = hasModuleAccess(role, 'dashboard', modules)
+    const canViewPOS = hasModuleAccess(role, 'pos', modules)
+    const canViewOrders = hasModuleAccess(role, 'orders', modules)
+    const canViewInventory = hasModuleAccess(role, 'inventory', modules)
+    const canViewRecipes = hasModuleAccess(role, 'recipes', modules)
+    const canViewFinance = hasModuleAccess(role, 'finance', modules)
+    const canViewReports = hasModuleAccess(role, 'reports', modules)
+    const canViewCRM = hasModuleAccess(role, 'crm', modules)
+    const canViewHR = hasModuleAccess(role, 'hr', modules)
+    const canViewUsers = hasModuleAccess(role, 'users', modules)
+    const canViewStores = hasModuleAccess(role, 'stores', modules)
 
     return (
         <div className="flex min-h-screen bg-[#F4F7F2]">
@@ -89,7 +90,7 @@ export function AppLayout() {
                     )}
 
                     {/* Administration Section */}
-                    {(canViewFinance || canViewReports || canViewCRM || canViewHR || canViewUsers) && (
+                    {(canViewFinance || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores) && (
                         <>
                             <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6">Administración</div>
                             {canViewFinance && (
@@ -104,6 +105,7 @@ export function AppLayout() {
                             {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix />}
                             {canViewHR && <NavItem to="/hr" icon={UserCog} label="RH" prefix />}
                             {canViewUsers && <NavItem to="/admin/users" icon={Settings} label="Usuarios" />}
+                            {canViewStores && <NavItem to="/admin/stores" icon={Store} label="Tiendas" />}
                         </>
                     )}
                 </nav>
