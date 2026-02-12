@@ -58,7 +58,10 @@ export function AppLayout() {
             >
                 {/* Header */}
                 <div className="p-8 pb-4">
-                    <div className="text-2xl font-black text-[#C1FF72] tracking-tight">Asados P.</div>
+                    <div className="text-2xl font-black text-[#C1FF72] tracking-tight relative inline-block">
+                        Asados P.
+                        <span className="text-[10px] absolute -top-1 -right-8 bg-blue-500 text-white px-1 rounded">BETA</span>
+                    </div>
                     <p className="text-xs text-white/60 mt-1 font-medium">ERP Management</p>
                 </div>
 

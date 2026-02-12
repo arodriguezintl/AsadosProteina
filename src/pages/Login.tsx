@@ -43,7 +43,10 @@ export default function Login() {
         <div className="flex h-screen w-full items-center justify-center bg-gray-50">
             <Card className="w-full max-w-sm">
                 <CardHeader>
-                    <CardTitle className="text-2xl text-center">Asados Proteína ERP</CardTitle>
+                    <CardTitle className="text-2xl text-center relative inline-block">
+                        Asados Proteína ERP
+                        <span className="absolute -top-1 -right-8 text-[10px] bg-blue-500 text-white px-1 rounded-sm">BETA</span>
+                    </CardTitle>
                     <CardDescription className="text-center">
                         Ingresa tus credenciales para acceder
                     </CardDescription>
