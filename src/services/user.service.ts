@@ -24,13 +24,12 @@ export const UserService = {
     },
 
     async createUser(userData: CreateUserDTO) {
-        // Edge Function needs to be deployed first
-        // Run: npx supabase login
-        // Then: npx supabase functions deploy create-user --project-ref qcnjzkfgydtpudkikvky
+        const { data, error } = await supabase.functions.invoke('create-user', {
+            body: userData
+        })
 
-        throw new Error(
-            `⚠️ La Edge Function no está desplegada aún.\n\nPara crear usuarios manualmente:\n\n1. Ve a Supabase Dashboard → Authentication → Users\n2. Click "Add User" → "Create new user"\n3. Email: ${userData.email}\n4. Password: (segura, mínimo 6 caracteres)\n5. Auto Confirm: ✅ Activado\n6. Copia el User UID\n7. Ejecuta en SQL Editor:\n\nINSERT INTO user_profiles (id, email, full_name, role, is_active, store_id)\nVALUES ('USER-UID-AQUI', '${userData.email}', '${userData.full_name}', '${userData.role}', true, ${userData.store_id ? `'${userData.store_id}'` : 'NULL'});\n\n8. Recarga esta página\n\n📖 Ver: HOW_TO_CREATE_USERS.md`
-        )
+        if (error) throw error
+        return data
     },
 
     async updateUser(id: string, updates: Partial<UserProfile>) {
@@ -64,10 +63,14 @@ export const UserService = {
     },
 
     async resetPassword(userId: string, newPassword: string) {
-        const { error } = await supabase.auth.admin.updateUserById(
-            userId,
-            { password: newPassword }
-        )
+        // Use Edge Function for admin operations securely
+        const { error } = await supabase.functions.invoke('admin-action', {
+            body: {
+                action: 'reset_password',
+                user_id: userId,
+                payload: { password: newPassword }
+            }
+        })
 
         if (error) throw error
     },

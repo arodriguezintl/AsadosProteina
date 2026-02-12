@@ -6,7 +6,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, Plus, Trash2 } from 'lucide-react'
 
 export default function CategoriesPage() {
@@ -15,9 +14,17 @@ export default function CategoriesPage() {
     const [isCreating, setIsCreating] = useState(false)
     const [newCategory, setNewCategory] = useState<CreateCategoryDTO>({
         name: '',
-        type: 'raw_material',
+        type: 'raw_material', // default
         description: ''
     })
+
+    const commonTypes = [
+        { value: 'raw_material', label: 'Materia Prima' },
+        { value: 'finished_product', label: 'Producto Final' },
+        { value: 'consumable', label: 'Desechables' },
+        { value: 'service', label: 'Servicios' },
+        { value: 'equipment', label: 'Equipo' }
+    ]
 
     useEffect(() => {
         loadCategories()
@@ -88,21 +95,45 @@ export default function CategoriesPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="type">Tipo de Uso</Label>
-                                <Select
-                                    value={newCategory.type}
-                                    onValueChange={(val: any) =>
-                                        setNewCategory({ ...newCategory, type: val })
-                                    }
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona tipo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="raw_material">Materia Prima (Ingredientes)</SelectItem>
-                                        <SelectItem value="consumable">Materia Prima (Desechables)</SelectItem>
-                                        <SelectItem value="finished_product">Producto Final (Ventas)</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <div className="space-y-3">
+                                    <p className="text-sm font-medium text-amber-600">
+                                        * Selecciona "Producto Final" para que aparezca en el Menú de Venta.
+                                    </p>
+                                    <Input
+                                        id="type"
+                                        placeholder="Escribe el tipo (ej: Limpieza, Oficina...)"
+                                        value={newCategory.type}
+                                        onChange={e => setNewCategory({ ...newCategory, type: e.target.value as any })}
+                                        required
+                                    />
+                                    <div className="flex flex-wrap gap-2">
+                                        <Button
+                                            type="button"
+                                            variant={newCategory.type === "finished_product" ? "default" : "outline"}
+                                            size="sm"
+                                            className={newCategory.type === "finished_product" ? "bg-green-600 hover:bg-green-700 h-8 font-bold" : "h-8"}
+                                            onClick={() => setNewCategory({ ...newCategory, type: "finished_product" })}
+                                        >
+                                            Producto Final (Venta)
+                                        </Button>
+
+                                        {commonTypes.filter(t => t.value !== 'finished_product').map(t => (
+                                            <Button
+                                                key={t.value}
+                                                type="button"
+                                                variant={newCategory.type === t.value ? "default" : "outline"}
+                                                size="sm"
+                                                className="h-8"
+                                                onClick={() => setNewCategory({ ...newCategory, type: t.value as any })}
+                                            >
+                                                {t.label}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Todo lo que NO sea "Producto Final" se considerará parte del Inventario Interno.
+                                    </p>
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Descripción (Opcional)</Label>
@@ -169,18 +200,17 @@ export default function CategoriesPage() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${cat.type === 'finished_product'
-                                                        ? 'bg-green-100 text-green-700'
-                                                        : cat.type === 'consumable'
-                                                            ? 'bg-orange-100 text-orange-700'
-                                                            : 'bg-blue-100 text-blue-700'
-                                                        }`}>
-                                                        {cat.type === 'finished_product'
-                                                            ? 'Producto Final'
-                                                            : cat.type === 'consumable'
-                                                                ? 'Desechable'
-                                                                : 'Materia Prima'}
-                                                    </span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={`inline-flex w-fit items-center px-2 py-1 rounded-full text-xs font-bold ${cat.type === 'finished_product'
+                                                                ? 'bg-green-100 text-green-700 border border-green-200'
+                                                                : 'bg-blue-50 text-blue-700 border border-blue-100'
+                                                            }`}>
+                                                            {cat.type === 'finished_product' ? 'MENÚ DE VENTA' : 'INVENTARIO INTERNO'}
+                                                        </span>
+                                                        <span className="text-xs text-muted-foreground font-mono bg-muted/50 px-1 rounded w-fit">
+                                                            {cat.type}
+                                                        </span>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button

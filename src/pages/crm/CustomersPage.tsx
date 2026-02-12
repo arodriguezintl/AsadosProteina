@@ -5,7 +5,7 @@ import type { Customer } from '@/types/customers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Loader2, Plus, Search, User } from 'lucide-react'
+import { Loader2, Plus, Search, User, Trash2 } from 'lucide-react'
 
 export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([])
@@ -24,6 +24,17 @@ export default function CustomersPage() {
             console.error('Error loading customers:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('¿Estás seguro de eliminar este cliente?')) return
+        try {
+            await CustomerService.deleteCustomer(id)
+            setCustomers(customers.filter(c => c.id !== id))
+        } catch (error: any) {
+            console.error('Error deleting customer:', error)
+            alert('Error al eliminar cliente: ' + (error.message || 'Error desconocido'))
         }
     }
 
@@ -104,9 +115,17 @@ export default function CustomersPage() {
                                             {customer.loyalty_points || 0} pts
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right flex items-center justify-end gap-2">
                                         <Button variant="outline" size="sm" asChild>
                                             <Link to={`/crm/customers/${customer.id}`}>Ver Detalles</Link>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                            onClick={() => handleDelete(customer.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>

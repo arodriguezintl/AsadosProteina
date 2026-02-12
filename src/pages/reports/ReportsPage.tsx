@@ -3,6 +3,7 @@ import { ReportService } from '@/services/report.service'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import { Loader2, DollarSign, ShoppingBag, TrendingUp, Calendar } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 
@@ -25,15 +26,16 @@ export default function ReportsPage() {
         if (storeId) {
             loadReports()
         }
-    }, [dateRange, storeId])
+    }, [storeId]) // Only initial load or store change
 
     const loadReports = async () => {
         try {
             if (!storeId) return
             setLoading(true)
-            const start = new Date(dateRange.start).toISOString()
-            // Add time to end date to cover the full day
-            const end = new Date(dateRange.end + 'T23:59:59').toISOString()
+            // Ensure we cover the full day in local time (or just rely on string comparison which is UTC-ish usually)
+            // Appending time is safer for "inclusive" range
+            const start = `${dateRange.start}T00:00:00`
+            const end = `${dateRange.end}T23:59:59`
 
             const [sales, top, invVal] = await Promise.all([
                 ReportService.getSalesReport(storeId, start, end),
@@ -75,6 +77,9 @@ export default function ReportsPage() {
                         onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
                         className="w-auto h-8"
                     />
+                    <Button size="sm" onClick={loadReports} disabled={loading}>
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Filtrar'}
+                    </Button>
                 </div>
             </div>
 

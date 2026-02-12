@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { ProductService } from '@/services/product.service'
 import type { Category, CreateProductDTO } from '@/types/inventory'
@@ -13,6 +13,9 @@ import { Label } from '@/components/ui/label'
 export default function ProductForm() {
     const { id } = useParams()
     const navigate = useNavigate()
+    const [searchParams] = useSearchParams()
+    const typeParam = searchParams.get('type') // 'raw_material' or 'finished_product'
+
     const [loading, setLoading] = useState(false)
     const [categories, setCategories] = useState<Category[]>([])
 
@@ -45,13 +48,8 @@ export default function ProductForm() {
     }
 
     const loadProduct = async (productId: string) => {
-        // We don't have getProductById in service yet, let's just use getProducts and find for now
-        // or add it to service. Ideally add it to service.
-        // For speed, I'll filter from getProducts or better, implement getProductById.
-        // I'll implement it in service in next step. For now, let's assume it exists or use a workaround.
         try {
             setLoading(true)
-            // fetch all products for now as valid workaround
             const storeId = '00000000-0000-0000-0000-000000000001'
             const products = await ProductService.getProducts(storeId)
             const product = products.find(p => p.id === productId)
@@ -62,7 +60,7 @@ export default function ProductForm() {
                 setValue('category_id', product.category_id)
                 setValue('unit_of_measure', product.unit_of_measure)
                 setValue('min_stock', product.min_stock)
-                setValue('current_stock', product.current_stock) // This might be read only in form?
+                setValue('current_stock', product.current_stock)
                 setValue('unit_cost', product.unit_cost)
                 setValue('sale_price', product.sale_price)
                 setValue('image_url', product.image_url)
@@ -71,6 +69,23 @@ export default function ProductForm() {
             console.error('Error loading product:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const filteredCategories = categories.filter(c => {
+        if (!typeParam && !id) return true
+        if (id) return true // When editing, show all to avoid hiding current category
+
+        if (typeParam === 'raw_material') return c.type !== 'finished_product'
+        if (typeParam === 'finished_product') return c.type === 'finished_product'
+        return true
+    })
+
+    const handleBack = () => {
+        if (typeParam === 'finished_product') {
+            navigate('/inventory/menu')
+        } else {
+            navigate('/inventory/stock')
         }
     }
 
@@ -85,7 +100,27 @@ export default function ProductForm() {
             } else {
                 await ProductService.createProduct(productData)
             }
-            navigate('/inventory/products')
+
+            // Navigate back to correct list
+            // If editing, check the category of the edited product to know where to go? 
+            // Or just check param if available. If no param (edit mode direct link), default to stock?
+            // Actually, products only list in one or the other.
+
+            let target = '/inventory/stock'
+            if (typeParam === 'finished_product') {
+                target = '/inventory/menu'
+            } else if (id) {
+                // Determine by category
+                const cat = categories.find(c => c.id === data.category_id)
+                if (cat && cat.type === 'finished_product') {
+                    target = '/inventory/menu'
+                }
+            } else if (typeParam === 'raw_material') {
+                target = '/inventory/stock'
+            }
+
+            navigate(target)
+
         } catch (error) {
             console.error('Error saving product:', error)
             alert('Error al guardar el producto')
@@ -97,7 +132,7 @@ export default function ProductForm() {
     return (
         <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/inventory/products')}>
+                <Button variant="ghost" size="icon" onClick={handleBack}>
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <h1 className="text-2xl font-bold">{id ? 'Editar Producto' : 'Nuevo Producto'}</h1>
@@ -129,7 +164,7 @@ export default function ProductForm() {
                                         <SelectValue placeholder="Seleccionar..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categories.map(cat => (
+                                        {filteredCategories.map(cat => (
                                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                                         ))}
                                     </SelectContent>

@@ -118,5 +118,5 @@ npx supabase functions deploy create-user
 
 ```powershell
 # Desplegar la función
-npx supabase functions deploy create-user --project-ref qcnjzkfgydtpudkikvky
+npx supabase functions deploy create-user --project-ref hoaixbdbswvfzyijxrhy
 ```

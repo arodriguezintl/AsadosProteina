@@ -59,7 +59,9 @@ function App() {
           <Route path="/hr" element={<HRPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/pos" element={<POS />} />
-          <Route path="/inventory/products" element={<ProductsPage />} />
+          <Route path="/inventory/products" element={<Navigate to="/inventory/stock" replace />} />
+          <Route path="/inventory/stock" element={<ProductsPage viewMode="inventory" />} />
+          <Route path="/inventory/menu" element={<ProductsPage viewMode="menu" />} />
           <Route path="/inventory/products/new" element={<ProductForm />} />
           <Route path="/inventory/products/:id" element={<ProductForm />} />
           <Route path="/inventory/categories" element={<CategoriesPage />} />

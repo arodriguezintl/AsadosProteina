@@ -79,8 +79,9 @@ export function AppLayout() {
                             <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6">Operaciones</div>
                             {canViewInventory && (
                                 <>
-                                    <NavItem to="/inventory/products" icon={Package} label="Productos" prefix />
-                                    <NavItem to="/inventory/categories" icon={List} label="Categorías Inv." />
+                                    <NavItem to="/inventory/stock" icon={Package} label="Inventario" prefix />
+                                    <NavItem to="/inventory/menu" icon={List} label="Productos Venta" prefix />
+                                    <NavItem to="/inventory/categories" icon={Settings} label="Categorías" />
                                 </>
                             )}
                             {canViewRecipes && <NavItem to="/recipes" icon={ChefHat} label="Recetas" prefix />}

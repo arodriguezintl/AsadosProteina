@@ -28,36 +28,20 @@ export const ReportService = {
     },
 
     async getTopProducts(storeId: string, startDate: string, endDate: string, limit: number = 5) {
-        // This is a bit complex without aggregation queries in simple PostgREST
-        // We'll fetch order items for the period and aggregate in JS for now (not efficient for huge data but works for MVP)
-
-        // 1. Get orders in range
-        const { data: orders, error: ordersError } = await supabase
-            .from('orders')
-            .select('id')
-            .eq('store_id', storeId)
-            .gte('created_at', startDate)
-            .lte('created_at', endDate)
-            .neq('status', 'cancelled')
-
-        if (ordersError) throw ordersError
-
-        if (!orders || orders.length === 0) return []
-
-        const orderIds = orders.map(o => o.id)
-
-        // 2. Get items for these orders
+        // Use inner join to filter order_items directly by order properties
         const { data: items, error: itemsError } = await supabase
             .from('order_items')
             .select(`
                 *,
-                product:inventory_products(name)
+                product:inventory_products(name),
+                order:orders!inner(store_id, created_at, status)
             `)
-            .in('order_id', orderIds)
+            .eq('order.store_id', storeId)
+            .gte('order.created_at', startDate)
+            .lte('order.created_at', endDate)
+            .neq('order.status', 'cancelled')
 
         if (itemsError) throw itemsError
-
-        // 3. Aggregate
         const productStats: Record<string, { name: string, quantity: number, revenue: number }> = {}
 
         const orderItems = items || []

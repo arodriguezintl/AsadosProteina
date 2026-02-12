@@ -3,14 +3,33 @@ import type { Product, Category, CreateProductDTO, UpdateProductDTO, CreateCateg
 
 export const ProductService = {
     async getProducts(storeId: string) {
-        const { data, error } = await supabase
+        // 1. Fetch products
+        const { data: products, error } = await supabase
             .from('inventory_products')
             .select('*')
             .eq('store_id', storeId)
             .order('name')
 
         if (error) throw error
-        return data as Product[]
+
+        // 2. Fetch categories manually to avoid join issues with foreign keys
+        // If this fails, we just return products without category details rather than failing
+        try {
+            const { data: categories } = await supabase
+                .from('inventory_categories')
+                .select('*') // Select all fields to ensure we get 'type'
+
+            if (products && categories) {
+                return products.map(p => ({
+                    ...p,
+                    category: categories.find(c => c.id === p.category_id)
+                })) as Product[]
+            }
+        } catch (err) {
+            console.warn('Error fetching categories for join:', err)
+        }
+
+        return (products || []) as Product[]
     },
 
     async getCategories() {

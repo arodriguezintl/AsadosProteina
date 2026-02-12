@@ -240,24 +240,40 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'tu-anon-key'
 
 ```powershell
 npx supabase login
-npx supabase link --project-ref qcnjzkfgydtpudkikvky
+npx supabase link --project-ref hoaixbdbswvfzyijxrhy
 ```
 
-### **Paso 6.2: Desplegar función**
+### **Paso 6.2: Desplegar funciones**
 
 ```powershell
 npx supabase functions deploy create-user
+npx supabase functions deploy admin-action
 ```
 
 ### **Paso 6.3: Verificar**
 
 1. Ve a Supabase Dashboard
 2. Edge Functions
-3. Verifica que `create-user` esté listada
+3. Verifica que `create-user` y `admin-action` estén listadas
+
+## 7. Configuración de Base de Datos (CRÍTICO)
+
+Para que el sistema de permisos (RBAC) y el inicio de sesión funcionen correctamente en producción, debes ejecutar el script de migración SQL.
+
+1. Ve a **Supabase Dashboard** > **SQL Editor**.
+2. Abre el archivo `supabase/migrations/20260212_fix_rbac.sql` de tu proyecto.
+3. Copia todo el contenido.
+4. Pégalo en el SQL Editor de Supabase.
+5. Haz click en **Run**.
+
+Esto habilitará:
+- Que los usuarios puedan leer su propio perfil (necesario para login).
+- Que los Super Admins tengan acceso total.
+- Que las restricciones de seguridad (RLS) funcionen correctamente.
 
 ---
 
-## 7. Solución de Problemas
+## 8. Solución de Problemas
 
 ### **Error: "Module not found"**
 

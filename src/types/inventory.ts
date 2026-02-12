@@ -1,4 +1,4 @@
-export type ProductType = 'finished_product' | 'raw_material' | 'consumable'
+export type ProductType = 'finished_product' | 'raw_material' | 'consumable' | 'service' | 'equipment'
 
 export interface Category {
     id: string
