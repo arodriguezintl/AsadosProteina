@@ -25,11 +25,10 @@ import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, checkSession } = useAuthStore()
+  const { user, loading } = useAuthStore()
 
-  useEffect(() => {
-    checkSession()
-  }, [checkSession])
+  // Removed redundant checkSession call here as it is handled globally in App component
+  // to avoid race conditions and double loading states.
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center">Cargando...</div>
