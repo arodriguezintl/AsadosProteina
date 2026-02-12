@@ -10,80 +10,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis"; 
 
 -- 2. ENUMS & TIPOS
-DO $$ BEGIN
-    CREATE TYPE user_role AS ENUM ('super_admin', 'admin', 'cashier', 'cook', 'delivery', 'accountant', 'manager');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
+-- NOTA: Usamos DROP ... CASCADE para asegurar que si el tipo existe incompleto, se recree bien.
+-- Esto es seguro en una instalación limpia.
+DROP TYPE IF EXISTS user_role CASCADE; 
+CREATE TYPE user_role AS ENUM ('super_admin', 'admin', 'cashier', 'cook', 'delivery', 'accountant', 'manager');
 
+-- Otros tipos pueden crearse con IF NOT EXISTS si no son conflictivos
 DO $$ BEGIN
     CREATE TYPE module_name AS ENUM ('dashboard', 'pos', 'inventory', 'recipes', 'delivery', 'crm', 'hr', 'payroll', 'finance', 'stores', 'users', 'orders', 'reports');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE order_type AS ENUM ('delivery', 'pickup');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE order_status AS ENUM ('pending', 'preparing', 'ready', 'in_delivery', 'completed', 'cancelled');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE payment_method AS ENUM ('cash', 'transfer', 'card');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'refunded');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE delivery_status AS ENUM ('assigned', 'picked_up', 'in_transit', 'delivered', 'failed');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE transaction_type AS ENUM ('income', 'expense');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE salary_type AS ENUM ('weekly', 'biweekly', 'monthly');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE attendance_status AS ENUM ('present', 'absent', 'late', 'early_leave', 'holiday');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE payroll_status AS ENUM ('draft', 'calculated', 'paid');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE product_type AS ENUM ('finished_product', 'raw_material', 'consumable', 'service', 'equipment');
-EXCEPTION
-    WHEN duplicate_object THEN null;
-END $$;
-
-DO $$ BEGIN
-    CREATE TYPE movement_type AS ENUM ('entry', 'exit', 'adjustment', 'transfer', 'sale');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -105,6 +39,9 @@ CREATE TABLE IF NOT EXISTS public.stores (
 );
 
 -- Profiles
+-- IMPORTANTE: Borramos la tabla para evitar conflictos con columnas perdidas por el DROP TYPE CASCADE anterior
+DROP TABLE IF EXISTS public.user_profiles CASCADE;
+
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
