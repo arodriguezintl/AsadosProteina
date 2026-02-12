@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, Plus, Store, Phone, MapPin, User, Power, Edit2 } from 'lucide-react'
+import { Loader2, Plus, Store as StoreIcon, Phone, MapPin, User, Power, Edit2 } from 'lucide-react'
 import type { UserProfile } from '@/types/database.types'
 
-interface Store {
+interface StoreData {
     id: string
     name: string
     code: string
@@ -27,11 +27,11 @@ interface Store {
 }
 
 export default function StoresPage() {
-    const [stores, setStores] = useState<Store[]>([])
+    const [stores, setStores] = useState<StoreData[]>([])
     const [managers, setManagers] = useState<UserProfile[]>([])
     const [loading, setLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [selectedStore, setSelectedStore] = useState<Store | null>(null)
+    const [selectedStore, setSelectedStore] = useState<StoreData | null>(null)
     const [formData, setFormData] = useState({
         name: '',
         code: '',
@@ -78,7 +78,7 @@ export default function StoresPage() {
         setIsDialogOpen(true)
     }
 
-    const openEditDialog = (store: Store) => {
+    const openEditDialog = (store: StoreData) => {
         setSelectedStore(store)
         setFormData({
             name: store.name,
@@ -123,7 +123,7 @@ export default function StoresPage() {
         }
     }
 
-    const handleToggleActive = async (store: Store) => {
+    const handleToggleActive = async (store: StoreData) => {
         try {
             await StoreService.toggleActive(store.id, !store.is_active)
             loadData()
@@ -249,7 +249,7 @@ export default function StoresPage() {
                         <CardContent className="p-6">
                             <div className="flex items-start justify-between mb-4">
                                 <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
-                                    <Store className="h-6 w-6" />
+                                    <StoreIcon className="h-6 w-6" />
                                 </div>
                                 <Badge variant="outline" className="font-mono">{store.code}</Badge>
                             </div>
@@ -295,7 +295,7 @@ export default function StoresPage() {
 
                 {stores.length === 0 && !loading && (
                     <div className="col-span-3 text-center py-12 text-muted-foreground bg-gray-50 rounded-lg border border-dashed">
-                        <Store className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                        <StoreIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
                         <p>No hay tiendas registradas</p>
                     </div>
                 )}
