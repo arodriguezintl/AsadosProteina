@@ -258,18 +258,19 @@ npx supabase functions deploy admin-action
 
 ## 7. Configuración de Base de Datos (CRÍTICO)
 
-Para que el sistema de permisos (RBAC) y el inicio de sesión funcionen correctamente en producción, debes ejecutar el script de migración SQL.
+Si estás configurando una base de datos **NUEVA** en Supabase para producción, debes crear las tablas y permisos desde cero.
 
 1. Ve a **Supabase Dashboard** > **SQL Editor**.
-2. Abre el archivo `supabase/migrations/20260212_fix_rbac.sql` de tu proyecto.
+2. Abre el archivo `supabase/migrations/20260212_production_setup.sql` de tu proyecto (este archivo crea TODO el esquema y corrige los permisos).
 3. Copia todo el contenido.
 4. Pégalo en el SQL Editor de Supabase.
 5. Haz click en **Run**.
 
-Esto habilitará:
-- Que los usuarios puedan leer su propio perfil (necesario para login).
-- Que los Super Admins tengan acceso total.
-- Que las restricciones de seguridad (RLS) funcionen correctamente.
+Esto creará:
+- Todas las tablas necesarias (Inventario, Ventas, Usuarios, etc).
+- Los tipos y enums del sistema.
+- Las políticas de seguridad (RBAC) corregidas para que el login funcione.
+- Una tienda y categorías iniciales por defecto.
 
 ---
 
