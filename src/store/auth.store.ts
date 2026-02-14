@@ -10,10 +10,11 @@ interface AuthState {
     loading: boolean
     signIn: (email: string, password?: string) => Promise<{ error: any }>
     signOut: () => Promise<void>
+    reset: () => void
     checkSession: () => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     role: null,
     storeId: null,
@@ -21,33 +22,56 @@ export const useAuthStore = create<AuthState>((set) => ({
     loading: true,
 
     signIn: async (email: string, password?: string) => {
-        console.log('Attempting sign in for:', email, 'Password provided:', !!password)
+        console.log('Attempting sign in for:', email)
         try {
+            set({ loading: true })
             if (password) {
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email,
                     password
                 })
-                console.log('Sign in with password result:', { success: !!data?.user, error })
-                return { error }
+
+                if (error) {
+                    set({ loading: false })
+                    return { error }
+                }
+
+                if (data.user) {
+                    // Explicitly load session data before returning to ensure UI has correct state
+                    console.log('Login successful, loading user profile...')
+                    await get().checkSession()
+                }
+
+                return { error: null }
             } else {
+                // Magic Link path (kept for reference or backward compat, though UI removed it)
                 const { data, error } = await supabase.auth.signInWithOtp({
                     email,
-                    options: {
-                        shouldCreateUser: false,
-                    }
+                    options: { shouldCreateUser: false }
                 })
-                console.log('Sign in with OTP result:', { data: !!data, error })
+                set({ loading: false })
                 return { error }
             }
         } catch (err) {
             console.error('Sign in exception:', err)
+            set({ loading: false })
             return { error: err }
         }
     },
 
     signOut: async () => {
-        await supabase.auth.signOut()
+        try {
+            await supabase.auth.signOut()
+        } catch (error) {
+            console.error('Error signing out:', error)
+        } finally {
+            // Force a hard reload to clear all state and stop any potential infinite loops
+            localStorage.removeItem('sb-hoaixbdbswvfzyijxrhy-auth-token') // Optional: clear Supabase token if key is known
+            window.location.href = '/login'
+        }
+    },
+
+    reset: () => {
         set({ user: null, role: null, storeId: null, modules: [], loading: false })
     },
 

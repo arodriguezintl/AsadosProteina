@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -7,9 +7,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Users, Clock, DollarSign, Search, Edit, LogIn, LogOut, Calendar, UserCheck, UserX } from 'lucide-react'
+import { Loader2, Plus, Users, DollarSign, Search, Edit, Calendar, UserCheck, UserX } from 'lucide-react'
 import { HRService } from '@/services/hr.service'
+import { UserService } from '@/services/user.service'
+import { useAuthStore } from '@/store/auth.store'
 import type { Employee, Payroll } from '@/types/hr'
+import type { UserRole } from '@/types/database.types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -25,7 +28,12 @@ export default function HRPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isPayrollDialogOpen, setIsPayrollDialogOpen] = useState(false)
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-    const [formData, setFormData] = useState<Partial<Employee>>({})
+    const [formData, setFormData] = useState<Partial<Employee> & {
+        email?: string,
+        password?: string,
+        role?: UserRole,
+        create_user?: boolean
+    }>({})
     const [payrolls, setPayrolls] = useState<Payroll[]>([])
     const [payrollFormData, setPayrollFormData] = useState({
         employee_id: '',
@@ -33,7 +41,14 @@ export default function HRPage() {
         period_end: ''
     })
 
-    const STORE_ID = '00000000-0000-0000-0000-000000000001'
+    // Stats State
+    const [stats, setStats] = useState({
+        usersPerStore: [] as { storeName: string, count: number }[],
+        recentChanges: [] as Employee[]
+    })
+
+    const { storeId: currentStoreId } = useAuthStore()
+    const STORE_ID = currentStoreId || '00000000-0000-0000-0000-000000000001' // Fallback or handle null
 
     useEffect(() => {
         loadData()
@@ -42,19 +57,31 @@ export default function HRPage() {
     const loadData = async () => {
         setLoading(true)
         try {
+
             if (activeTab === 'employees' || activeTab === 'time') {
                 const data = await HRService.getEmployees(STORE_ID)
 
+                // Calculate stats
+                // Mocking store names for now as we only fetch for current store usually
+                // In a real scenario we might need to fetch all stores if we are SuperAdmin
+                const activeCount = data.filter(e => e.is_active).length
+                const storeCount = { storeName: 'Tienda Actual', count: activeCount }
+
+                // Recent changes: simple sort by created_at or updated if available (mocking with slice)
+                const recent = [...data].sort((a, b) => (new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())).slice(0, 5)
+
+                setStats({
+                    usersPerStore: [storeCount],
+                    recentChanges: recent
+                })
+
                 if (activeTab === 'time') {
-                    // Load active shifts for each employee
+                    // Control Horario disabled for now
+                    // ... existing logic if enabled
                     const employeesWithShifts = await Promise.all(
                         data.map(async (emp) => {
-                            try {
-                                const shift = await HRService.getActiveShift(emp.id)
-                                return { ...emp, activeShift: shift }
-                            } catch {
-                                return { ...emp, activeShift: null }
-                            }
+                            // ... existing logic ...
+                            return { ...emp, activeShift: null }
                         })
                     )
                     setEmployees(employeesWithShifts)
@@ -80,14 +107,107 @@ export default function HRPage() {
         e.position.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
+    const handlePositionChange = (position: string) => {
+        let newRole: UserRole | undefined = undefined
+        let createUser = false
+
+        // Map Position to Role
+        switch (position) {
+            case 'Admin':
+                newRole = 'admin'
+                createUser = true
+                break
+            case 'Gerente':
+                newRole = 'manager'
+                createUser = true
+                break
+            case 'Cajero':
+                newRole = 'cashier'
+                createUser = true
+                break
+            case 'Staff':
+                newRole = undefined
+                createUser = false
+                break
+            default:
+                newRole = undefined
+                createUser = false
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            position,
+            role: newRole,
+            create_user: createUser
+        }))
+    }
+
     const handleEmployeeSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        console.log('Starting handleEmployeeSubmit...')
         setLoading(true)
+
+        // Safety timeout to prevent infinite loading
+        const safetyTimeout = setTimeout(() => {
+            console.error('Safety timeout triggered in handleEmployeeSubmit')
+            setLoading(false)
+            alert('La operación está tardando demasiado. Por favor verifica si el usuario se creó.')
+        }, 15000)
+
         try {
+            console.log('Form Data:', formData)
+            let userId = selectedEmployee?.user_id
+
+            // Handle User Creation if requested and credentials provided
+            if (formData.create_user && formData.email && formData.password && !userId) {
+                const userData = {
+                    email: formData.email,
+                    password: formData.password,
+                    full_name: `${formData.first_name} ${formData.last_name}`,
+                    role: formData.role || 'cashier',
+                    store_id: STORE_ID,
+                    modules: ['dashboard', 'pos', 'orders'] as any[] // Default modules, cast to avoid lint error or import ModuleName
+                }
+                const newUser = await UserService.createUser(userData)
+                if (newUser && newUser.user) {
+                    userId = newUser.user.id
+                }
+            }
+
+            const employeeData: Partial<Employee> = {
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                position: formData.position,
+                phone: formData.phone,
+                salary_type: formData.salary_type,
+                salary_amount: formData.salary_amount,
+                is_active: formData.is_active,
+                store_id: STORE_ID,
+                user_id: userId // Link the user
+            }
+
             if (selectedEmployee) {
-                await HRService.updateEmployee(selectedEmployee.id, formData)
+                // Update User if needed
+                if (selectedEmployee.user_id) {
+                    if (formData.password) {
+                        try {
+                            await UserService.resetPassword(selectedEmployee.user_id, formData.password)
+                        } catch (pwError) {
+                            console.error("Error updating password", pwError)
+                        }
+                    }
+                    if (formData.role && selectedEmployee.user?.role !== formData.role) {
+                        // Update user role
+                        const currentUser = await UserService.getUserById(selectedEmployee.user_id)
+                        if (currentUser) {
+                            await UserService.updateUser(selectedEmployee.user_id, { role: formData.role })
+                        }
+                    }
+                }
+
+                await HRService.updateEmployee(selectedEmployee.id, employeeData)
             } else {
-                await HRService.createEmployee({ ...formData, store_id: STORE_ID, is_active: true } as Employee)
+                await HRService.createEmployee({ ...employeeData, is_active: true } as Employee)
             }
             setIsDialogOpen(false)
             setSelectedEmployee(null)
@@ -95,9 +215,25 @@ export default function HRPage() {
             loadData()
         } catch (error: any) {
             console.error('Error saving employee:', error)
-            const errorMessage = error?.message || JSON.stringify(error)
+            let errorMessage = error?.message || "Error desconocido"
+            // Start of improved error handling
+            if (error && typeof error === 'object' && 'context' in error) {
+                // FunctionsHttpError often has a context property with the response
+                try {
+                    const context = (error as any).context;
+                    if (context && typeof context.json === 'function') {
+                        const body = await context.json();
+                        if (body && body.error) {
+                            errorMessage = body.error;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing function response", e)
+                }
+            }
             alert(`Error al guardar empleado: ${errorMessage}`)
         } finally {
+            clearTimeout(safetyTimeout)
             setLoading(false)
         }
     }
@@ -113,6 +249,7 @@ export default function HRPage() {
         }
     }
 
+    /*
     const handleClockIn = async (employeeId: string) => {
         try {
             await HRService.clockIn(employeeId, STORE_ID)
@@ -130,6 +267,7 @@ export default function HRPage() {
             alert(error?.message || 'Error al registrar salida')
         }
     }
+    */
 
     const handleGeneratePayroll = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -152,7 +290,12 @@ export default function HRPage() {
 
     const openEditEmployee = (emp: Employee) => {
         setSelectedEmployee(emp)
-        setFormData(emp)
+        setFormData({
+            ...emp,
+            email: emp.user?.email,
+            role: emp.user?.role,
+            create_user: false
+        })
         setIsDialogOpen(true)
     }
 
@@ -161,7 +304,10 @@ export default function HRPage() {
         setFormData({
             salary_type: 'hourly',
             salary_amount: 0,
-            position: 'Staff'
+            position: 'Staff',
+            // Default to Staff logic
+            role: undefined,
+            create_user: false
         })
         setIsDialogOpen(true)
     }
@@ -215,14 +361,13 @@ export default function HRPage() {
                                     <Label>Puesto</Label>
                                     <Select
                                         value={formData.position}
-                                        onValueChange={v => setFormData({ ...formData, position: v })}
+                                        onValueChange={handlePositionChange}
                                     >
                                         <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Manager">Gerente</SelectItem>
-                                            <SelectItem value="Cook">Cocinero</SelectItem>
-                                            <SelectItem value="Driver">Repartidor</SelectItem>
-                                            <SelectItem value="Cashier">Cajero</SelectItem>
+                                            <SelectItem value="Admin">Admin</SelectItem>
+                                            <SelectItem value="Gerente">Gerente</SelectItem>
+                                            <SelectItem value="Cajero">Cajero</SelectItem>
                                             <SelectItem value="Staff">Staff</SelectItem>
                                         </SelectContent>
                                     </Select>
@@ -261,6 +406,66 @@ export default function HRPage() {
                                         onChange={e => setFormData({ ...formData, salary_amount: parseFloat(e.target.value) })}
                                     />
                                 </div>
+                            </div>
+
+                            {/* User User Creation / Edit Fields */}
+                            <div className="space-y-4 border-t pt-4">
+                                {!selectedEmployee ? (
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="create_user"
+                                            checked={formData.create_user}
+                                            onChange={e => setFormData({ ...formData, create_user: e.target.checked })}
+                                            className="h-4 w-4 rounded border-gray-300"
+                                            disabled={['Admin', 'Gerente', 'Cajero'].includes(formData.position || '')}
+                                        />
+                                        <Label htmlFor="create_user">Crear Usuario de Sistema</Label>
+                                    </div>
+                                ) : (
+                                    <h4 className="font-medium text-sm">Acceso al Sistema</h4>
+                                )}
+
+                                {(formData.create_user || (selectedEmployee && selectedEmployee.user_id)) && (
+                                    <>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Email</Label>
+                                                <Input
+                                                    type="email"
+                                                    disabled={!!selectedEmployee} // Cannot change email easily for now
+                                                    value={formData.email || ''}
+                                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>{selectedEmployee ? 'Nueva Contraseña (Opcional)' : 'Contraseña'}</Label>
+                                                <Input
+                                                    type="password"
+                                                    value={formData.password || ''}
+                                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                    placeholder={selectedEmployee ? "Dejar vacío para mantener" : ""}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Rol de Sistema</Label>
+                                            <Select
+                                                value={formData.role}
+                                                onValueChange={v => setFormData({ ...formData, role: v as UserRole })}
+                                            >
+                                                <SelectTrigger><SelectValue placeholder="Seleccionar Rol" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="admin">Administrador</SelectItem>
+                                                    <SelectItem value="manager">Gerente</SelectItem>
+                                                    <SelectItem value="cashier">Cajero</SelectItem>
+                                                    <SelectItem value="cook">Cocinero</SelectItem>
+                                                    <SelectItem value="delivery">Repartidor</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             <DialogFooter>
                                 <Button type="submit" disabled={loading}>
@@ -301,7 +506,16 @@ export default function HRPage() {
                             ) : (
                                 filteredEmployees.map(emp => (
                                     <TableRow key={emp.id}>
-                                        <TableCell className="font-medium">{emp.first_name} {emp.last_name}</TableCell>
+                                        <TableCell className="font-medium">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-primary cursor-pointer hover:underline" onClick={() => openEditEmployee(emp)}>
+                                                    {emp.first_name} {emp.last_name}
+                                                </span>
+                                                {emp.user_id && (
+                                                    <Badge variant="secondary" className="w-fit text-[10px] h-4 px-1 mt-1">Usuario Sistema</Badge>
+                                                )}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{emp.position}</Badge>
                                         </TableCell>
@@ -343,6 +557,7 @@ export default function HRPage() {
         </div>
     )
 
+    /*
     const renderTimeTracking = () => (
         <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -401,6 +616,7 @@ export default function HRPage() {
             </div>
         </div>
     )
+    */
 
     const renderPayroll = () => (
         <div className="space-y-4">
@@ -527,14 +743,16 @@ export default function HRPage() {
                 </div>
             </div>
 
+            {/* Removed Control Horario Tab Button in render, check below */}
             <div className="flex space-x-1 bg-muted/20 p-1 rounded-xl w-fit">
                 <button
                     onClick={() => setActiveTab('employees')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'employees' ? 'bg-white shadow text-primary' : 'text-muted-foreground hover:bg-white/50'
                         }`}
                 >
-                    <Users className="h-4 w-4" /> Empleados
+                    <Users className="h-4 w-4" /> Personal
                 </button>
+                {/* 
                 <button
                     onClick={() => setActiveTab('time')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'time' ? 'bg-white shadow text-primary' : 'text-muted-foreground hover:bg-white/50'
@@ -542,6 +760,7 @@ export default function HRPage() {
                 >
                     <Clock className="h-4 w-4" /> Control Horario
                 </button>
+                */}
                 <button
                     onClick={() => setActiveTab('payroll')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'payroll' ? 'bg-white shadow text-primary' : 'text-muted-foreground hover:bg-white/50'
@@ -551,8 +770,43 @@ export default function HRPage() {
                 </button>
             </div>
 
+            {/* Stats Cards */}
+            {activeTab === 'employees' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Usuarios por Tienda</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {stats.usersPerStore.map((s, i) => (
+                                <div key={i} className="flex justify-between items-center mb-1">
+                                    <span className="text-sm">{s.storeName}</span>
+                                    <span className="font-bold">{s.count}</span>
+                                </div>
+                            ))}
+                            {stats.usersPerStore.length === 0 && <span className="text-2xl font-bold">0</span>}
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Cambios Recientes</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                {stats.recentChanges.map(e => (
+                                    <div key={e.id} className="text-xs flex justify-between">
+                                        <span>{e.first_name} {e.last_name}</span>
+                                        <span className="text-muted-foreground">{e.position}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             {activeTab === 'employees' && renderEmployees()}
-            {activeTab === 'time' && renderTimeTracking()}
+            {/* {activeTab === 'time' && renderTimeTracking()} */}
             {activeTab === 'payroll' && renderPayroll()}
         </div>
     )

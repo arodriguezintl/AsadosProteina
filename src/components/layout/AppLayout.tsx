@@ -106,8 +106,7 @@ export function AppLayout() {
                             )}
                             {canViewReports && <NavItem to="/reports" icon={BarChart3} label="Reportes" prefix />}
                             {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix />}
-                            {canViewHR && <NavItem to="/hr" icon={UserCog} label="RH" prefix />}
-                            {canViewUsers && <NavItem to="/admin/users" icon={Settings} label="Usuarios" />}
+                            {canViewHR && <NavItem to="/hr" icon={UserCog} label="Personal" prefix />}
                             {canViewStores && <NavItem to="/admin/stores" icon={Store} label="Tiendas" />}
                         </>
                     )}

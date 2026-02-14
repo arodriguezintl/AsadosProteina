@@ -5,8 +5,12 @@ export const HRService = {
     // --- Employees ---
     async getEmployees(storeId: string) {
         const { data, error } = await supabase
+            .schema('public')
             .from('employees')
-            .select('*')
+            .select(`
+                *,
+                user:user_profiles(*)
+            `)
             .eq('store_id', storeId)
             .order('first_name')
 
@@ -16,6 +20,7 @@ export const HRService = {
 
     async createEmployee(employee: Partial<Employee>) {
         const { data, error } = await supabase
+            .schema('public')
             .from('employees')
             .insert(employee)
             .select()
@@ -27,6 +32,7 @@ export const HRService = {
 
     async updateEmployee(id: string, updates: Partial<Employee>) {
         const { data, error } = await supabase
+            .schema('public')
             .from('employees')
             .update(updates)
             .eq('id', id)

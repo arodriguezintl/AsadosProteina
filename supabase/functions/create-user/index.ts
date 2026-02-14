@@ -10,7 +10,7 @@ interface CreateUserRequest {
   email: string
   password: string
   full_name: string
-  role: 'super_admin' | 'admin' | 'manager' | 'cashier'
+  role: 'super_admin' | 'admin' | 'manager' | 'cashier' | 'cook' | 'delivery'
   store_id?: string | null
   modules?: string[]
 }

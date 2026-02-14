@@ -178,7 +178,7 @@ export default function Dashboard() {
                             <option>Semana pasada</option>
                         </select>
                     </div>
-                    <div className="h-64 w-full" style={{ minWidth: 0 }}>
+                    <div className="h-64 w-full min-h-[300px]" style={{ minWidth: 0 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={weeklyStats}>
                                 <XAxis

@@ -1,3 +1,5 @@
+import type { UserProfile } from './database.types'
+
 export interface Employee {
     id: string
     store_id: string
@@ -12,6 +14,7 @@ export interface Employee {
     hire_date?: string
     is_active: boolean
     created_at?: string
+    user?: UserProfile
 }
 
 export interface WorkShift {

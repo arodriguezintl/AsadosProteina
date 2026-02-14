@@ -201,10 +201,20 @@ export default function ProductForm() {
                                 <Input type="number" step="0.01" id="unit_cost" {...register('unit_cost', { valueAsNumber: true })} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="sale_price">Precio Venta ($)</Label>
-                                <Input type="number" step="0.01" id="sale_price" {...register('sale_price', { valueAsNumber: true })} />
-                            </div>
+                            {(() => {
+                                const selectedCatId = watch('category_id');
+                                const selectedCat = categories.find(c => c.id === selectedCatId);
+                                // Show Sale Price only if category is 'finished_product' OR if we determine we are in Menu mode
+                                // If no category selected yet, rely on typeParam
+                                const isFinishedProduct = (selectedCat?.type === 'finished_product') || (typeParam === 'finished_product');
+
+                                return isFinishedProduct ? (
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="sale_price">Precio Venta ($)</Label>
+                                        <Input type="number" step="0.01" id="sale_price" {...register('sale_price', { valueAsNumber: true })} />
+                                    </div>
+                                ) : null;
+                            })()}
                         </div>
 
                         <div className="grid gap-2">

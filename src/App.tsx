@@ -52,9 +52,9 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, _session) => {
       if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED') {
         await checkSession()
-      } else if (_event === 'SIGNED_OUT') {
-        useAuthStore.getState().signOut()
       }
+      // Removed SIGNED_OUT listener: manual signOut now handles the redirect/reset via hard reload.
+      // Keeping a listener here can cause infinite loops in some browsers.
     })
 
     return () => {

@@ -186,17 +186,19 @@ export default function FinanceDashboard() {
                         <CardDescription>Ingresos vs Gastos (últimos 6 meses)</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={monthlyData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis />
-                                <Tooltip formatter={(value: any) => `$${Number(value).toFixed(2)}`} />
-                                <Legend />
-                                <Bar dataKey="income" fill="#10b981" name="Ingresos" />
-                                <Bar dataKey="expenses" fill="#ef4444" name="Gastos" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <div className="h-[300px] w-full" style={{ minWidth: 0 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={monthlyData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip formatter={(value: any) => `$${Number(value).toFixed(2)}`} />
+                                    <Legend />
+                                    <Bar dataKey="income" fill="#10b981" name="Ingresos" />
+                                    <Bar dataKey="expenses" fill="#ef4444" name="Gastos" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -208,25 +210,27 @@ export default function FinanceDashboard() {
                     </CardHeader>
                     <CardContent>
                         {expensesByCategory.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={expensesByCategory}
-                                        cx="50%"
-                                        cy="50%"
-                                        labelLine={false}
-                                        label={({ name, percent }: { name?: string, percent?: number }) => `${name || ''}: ${((percent || 0) * 100).toFixed(0)}%`}
-                                        outerRadius={80}
-                                        fill="#8884d8"
-                                        dataKey="value"
-                                    >
-                                        {expensesByCategory.map((_entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(value: any) => `$${Number(value).toFixed(2)}`} />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <div className="h-[300px] w-full" style={{ minWidth: 0 }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={expensesByCategory}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }: { name?: string, percent?: number }) => `${name || ''}: ${((percent || 0) * 100).toFixed(0)}%`}
+                                            outerRadius={80}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {expensesByCategory.map((_entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value: any) => `$${Number(value).toFixed(2)}`} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         ) : (
                             <div className="flex items-center justify-center h-[300px] text-muted-foreground">
                                 No hay datos de gastos por categoría
