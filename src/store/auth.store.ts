@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 return { error: null }
             } else {
                 // Magic Link path (kept for reference or backward compat, though UI removed it)
-                const { data, error } = await supabase.auth.signInWithOtp({
+                const { error } = await supabase.auth.signInWithOtp({
                     email,
                     options: { shouldCreateUser: false }
                 })
