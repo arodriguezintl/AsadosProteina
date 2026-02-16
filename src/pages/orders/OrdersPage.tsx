@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { OrderService } from '@/services/order.service'
+import { useAuthStore } from '@/store/auth.store'
 import type { Order, OrderStatus } from '@/types/orders'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -31,14 +32,20 @@ export default function OrdersPage() {
     const [selectedDriver, setSelectedDriver] = useState<string>('')
     const [assigningOrder, setAssigningOrder] = useState<string | null>(null)
 
+    const { storeId } = useAuthStore()
+
     useEffect(() => {
-        loadOrders()
-        loadDrivers()
+        if (storeId) {
+            loadOrders()
+            loadDrivers()
+        }
 
         // Optional: Polling for new orders every 30s
-        const interval = setInterval(loadOrders, 30000)
+        const interval = setInterval(() => {
+            if (storeId) loadOrders()
+        }, 30000)
         return () => clearInterval(interval)
-    }, [])
+    }, [storeId])
 
     const loadDrivers = async () => {
         try {
@@ -50,8 +57,9 @@ export default function OrdersPage() {
     }
 
     const loadOrders = async () => {
+        if (!storeId) return
         try {
-            const data = await OrderService.getOrders()
+            const data = await OrderService.getOrders(undefined, undefined, storeId)
             setOrders(data)
         } catch (error) {
             console.error('Error loading orders:', error)

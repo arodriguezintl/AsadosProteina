@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 console.error('Error fetching user profile:', error)
             }
 
-            const userRole = profile?.role || 'admin'
+            const userRole = profile?.role || 'cashier'
             let userStoreId = profile?.store_id
             const userModules = profile?.modules || []
 
@@ -119,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 }
             }
 
-            console.log('Session loaded for:', session.user.email, 'Role:', userRole, 'Modules:', userModules)
+            console.log('Session loaded for:', session.user.email, 'Role:', userRole, 'StoreId:', userStoreId, 'Modules:', userModules)
 
             set({
                 user: session.user,

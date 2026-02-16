@@ -17,12 +17,7 @@ export const StoreService = {
     async getStores() {
         const { data, error } = await supabase
             .from('stores')
-            .select(`
-                *,
-                manager:manager_id (
-                    full_name
-                )
-            `)
+            .select('*')
             .order('name')
 
         if (error) throw error

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ReportService } from '@/services/report.service'
+import { StoreService } from '@/services/store.service'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Loader2, DollarSign, ShoppingBag, TrendingUp, Calendar } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 
 import { useAuthStore } from '@/store/auth.store'
@@ -15,44 +17,99 @@ export default function ReportsPage() {
         start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
         end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
     })
-    const { storeId } = useAuthStore()
+
+    const { role, storeId: userStoreId } = useAuthStore()
+    const isSuperAdmin = role === 'super_admin'
+
+    // Filter state
+    const [selectedStoreId, setSelectedStoreId] = useState<string | 'all'>('all')
+    const [storesList, setStoresList] = useState<any[]>([])
 
     // Stats
     const [salesStats, setSalesStats] = useState({ totalSales: 0, totalOrders: 0, avgTicket: 0 })
     const [topProducts, setTopProducts] = useState<any[]>([])
     const [valuation, setValuation] = useState({ totalValuation: 0, productCount: 0 })
+    const [storeComparison, setStoreComparison] = useState<any[]>([])
 
     useEffect(() => {
-        if (storeId) {
-            loadReports()
+        if (isSuperAdmin) {
+            loadStoresList()
+        } else if (userStoreId) {
+            setSelectedStoreId(userStoreId)
         }
-    }, [storeId]) // Only initial load or store change
+    }, [isSuperAdmin, userStoreId])
+
+    useEffect(() => {
+        // If not super admin, wait for storeId to be set
+        if (!isSuperAdmin && !userStoreId) return
+
+        // If super admin and 'all' is selected, maybe we show aggregate? 
+        // For now, let's load reports when filter changes
+        loadReports()
+    }, [selectedStoreId, isSuperAdmin, userStoreId])
+
+    const loadStoresList = async () => {
+        try {
+            const stores = await StoreService.getStores()
+            setStoresList(stores || [])
+        } catch (error) {
+            console.error('Error loading stores list:', error)
+        }
+    }
 
     const loadReports = async () => {
+        setLoading(true)
         try {
-            if (!storeId) return
-            setLoading(true)
-            // Ensure we cover the full day in local time (or just rely on string comparison which is UTC-ish usually)
-            // Appending time is safer for "inclusive" range
             const start = `${dateRange.start}T00:00:00`
             const end = `${dateRange.end}T23:59:59`
 
-            const [sales, top, invVal] = await Promise.all([
-                ReportService.getSalesReport(storeId, start, end),
-                ReportService.getTopProducts(storeId, start, end, 5),
-                ReportService.getInventoryValuation(storeId)
-            ])
+            // Determine which store to fetch for main stats
+            // If Super Admin and 'all', we might want aggregate of all? 
+            // Or just disable main stats if 'all' selected and only show comparison.
+            // Let's assume if 'all', we fetch comparison. If specific, we fetch stats for that store.
 
-            setSalesStats(sales)
-            setTopProducts(top)
-            setValuation(invVal)
+            const targetStoreId = isSuperAdmin ? (selectedStoreId === 'all' ? null : selectedStoreId) : userStoreId
+
+            const promises: Promise<any>[] = []
+
+            if (targetStoreId) {
+                // Fetch specific store stats
+                promises.push(ReportService.getSalesReport(targetStoreId, start, end))
+                promises.push(ReportService.getTopProducts(targetStoreId, start, end, 5))
+                promises.push(ReportService.getInventoryValuation(targetStoreId))
+            } else if (isSuperAdmin && selectedStoreId === 'all') {
+                // Fetch comparison for all stores
+                promises.push(ReportService.getSalesByStore(start, end))
+                // We can also calculate total aggregate sales from comparison
+            }
+
+            const results = await Promise.all(promises)
+
+            if (targetStoreId) {
+                setSalesStats(results[0])
+                setTopProducts(results[1])
+                setValuation(results[2])
+                setStoreComparison([]) // clear comparison if focused on one store
+            } else if (isSuperAdmin && selectedStoreId === 'all') {
+                const comparison = results[0]
+                setStoreComparison(comparison)
+
+                // Aggregate for top cards
+                const totalSales = comparison.reduce((sum: number, s: any) => sum + s.totalSales, 0)
+                const totalOrders = comparison.reduce((sum: number, s: any) => sum + s.totalOrders, 0)
+                const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0
+
+                setSalesStats({ totalSales, totalOrders, avgTicket })
+                setTopProducts([])
+                setValuation({ totalValuation: 0, productCount: 0 })
+            }
+
         } catch (error) {
             console.error('Error loading reports:', error)
         } finally {
             setLoading(false)
         }
     }
-
 
     return (
         <div className="space-y-6">
@@ -62,28 +119,43 @@ export default function ReportsPage() {
                     <p className="text-muted-foreground">Resumen de ventas y estado del inventario</p>
                 </div>
 
-                <div className="flex items-center gap-2 bg-card p-2 rounded-md border shadow-sm">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="date"
-                        value={dateRange.start}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        className="w-auto h-8"
-                    />
-                    <span className="text-muted-foreground">-</span>
-                    <Input
-                        type="date"
-                        value={dateRange.end}
-                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        className="w-auto h-8"
-                    />
-                    <Button size="sm" onClick={loadReports} disabled={loading}>
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Filtrar'}
-                    </Button>
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                    {isSuperAdmin && (
+                        <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Seleccionar Tienda" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todas las tiendas</SelectItem>
+                                {storesList.map(store => (
+                                    <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+
+                    <div className="flex items-center gap-2 bg-card p-1 rounded-md border shadow-sm">
+                        <Input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="w-auto h-8 border-none"
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <Input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="w-auto h-8 border-none"
+                        />
+                        <Button size="sm" variant="ghost" onClick={loadReports} disabled={loading}>
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Filtrar'}
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {loading ? (
+            {loading && !salesStats.totalSales ? (
                 <div className="flex justify-center h-40 items-center">
                     <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
@@ -133,48 +205,85 @@ export default function ReportsPage() {
                         </Card>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                        {/* Top Products */}
-                        <Card className="col-span-1">
+                    {/* Stores Comparison Table (Super Admin Only) */}
+                    {isSuperAdmin && selectedStoreId === 'all' && storeComparison.length > 0 && (
+                        <Card>
                             <CardHeader>
-                                <CardTitle>Productos Más Vendidos</CardTitle>
+                                <CardTitle className="flex items-center gap-2">
+                                    <StoreIcon className="h-5 w-5" />
+                                    Ventas por Tienda
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {topProducts.length === 0 ? (
-                                    <p className="text-center text-muted-foreground py-4">No hay datos de ventas</p>
-                                ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Producto</TableHead>
-                                                <TableHead className="text-right">Cant.</TableHead>
-                                                <TableHead className="text-right">Venta</TableHead>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Tienda</TableHead>
+                                            <TableHead className="text-right">Pedidos</TableHead>
+                                            <TableHead className="text-right">Ventas Totales</TableHead>
+                                            <TableHead className="text-right">Ticket Promedio</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {storeComparison.map((store) => (
+                                            <TableRow key={store.id}>
+                                                <TableCell className="font-medium">{store.name}</TableCell>
+                                                <TableCell className="text-right">{store.totalOrders}</TableCell>
+                                                <TableCell className="text-right font-bold text-green-600">${store.totalSales.toFixed(2)}</TableCell>
+                                                <TableCell className="text-right">${(store.totalOrders > 0 ? store.totalSales / store.totalOrders : 0).toFixed(2)}</TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {topProducts.map((product, idx) => (
-                                                <TableRow key={idx}>
-                                                    <TableCell className="font-medium">{product.name}</TableCell>
-                                                    <TableCell className="text-right">{product.quantity}</TableCell>
-                                                    <TableCell className="text-right">${product.revenue.toFixed(2)}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                )}
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
+                    )}
 
-                        {/* Recent Activity or Chart Placeholder */}
-                        <Card className="col-span-1">
-                            <CardHeader>
-                                <CardTitle>Resumen por Categoría</CardTitle>
-                            </CardHeader>
-                            <CardContent className="h-[300px] flex items-center justify-center border-dashed border-2 rounded-md bg-muted/20">
-                                <p className="text-muted-foreground">Gráfico de pastel próximamente...</p>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    {/* Detailed Store View */}
+                    {selectedStoreId !== 'all' && (
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {/* Top Products */}
+                            <Card className="col-span-1">
+                                <CardHeader>
+                                    <CardTitle>Productos Más Vendidos</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {topProducts.length === 0 ? (
+                                        <p className="text-center text-muted-foreground py-4">No hay datos de ventas</p>
+                                    ) : (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Producto</TableHead>
+                                                    <TableHead className="text-right">Cant.</TableHead>
+                                                    <TableHead className="text-right">Venta</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {topProducts.map((product, idx) => (
+                                                    <TableRow key={idx}>
+                                                        <TableCell className="font-medium">{product.name}</TableCell>
+                                                        <TableCell className="text-right">{product.quantity}</TableCell>
+                                                        <TableCell className="text-right">${product.revenue.toFixed(2)}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Recent Activity or Chart Placeholder */}
+                            <Card className="col-span-1">
+                                <CardHeader>
+                                    <CardTitle>Resumen por Categoría</CardTitle>
+                                </CardHeader>
+                                <CardContent className="h-[300px] flex items-center justify-center border-dashed border-2 rounded-md bg-muted/20">
+                                    <p className="text-muted-foreground">Gráfico de pastel próximamente...</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
                 </>
             )}
         </div>

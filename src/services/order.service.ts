@@ -5,10 +5,18 @@ import type { Order, OrderStatus } from '@/types/orders'
 import type { CreateOrderDTO, CreateOrderItemDTO } from '@/types/sales'
 
 export const OrderService = {
-    async generateOrderNumber(_storeId: string) {
+    async generateOrderNumber(storeId: string) {
+        // Get store prefix
+        const { data: store } = await supabase
+            .from('stores')
+            .select('name')
+            .eq('id', storeId)
+            .single()
+
+        const prefix = store?.name ? store.name.substring(0, 3).toUpperCase() : 'ORD'
         const date = new Date().toISOString().slice(2, 10).replace(/-/g, '')
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-        return `ORD-${date}-${random}`
+        return `${prefix}-${date}-${random}`
     },
 
     async createOrder(order: CreateOrderDTO, items: CreateOrderItemDTO[], userId: string) {
@@ -46,7 +54,7 @@ export const OrderService = {
         return newOrder
     },
 
-    async getOrders(statusFilter?: OrderStatus | OrderStatus[], limit?: number) {
+    async getOrders(statusFilter?: OrderStatus | OrderStatus[], limit?: number, storeId?: string) {
         let query = supabase
             .from('orders')
             .select(`
@@ -58,6 +66,10 @@ export const OrderService = {
                 customer:customers(full_name)
             `)
             .order('created_at', { ascending: false })
+
+        if (storeId) {
+            query = query.eq('store_id', storeId)
+        }
 
         if (statusFilter) {
             if (Array.isArray(statusFilter)) {

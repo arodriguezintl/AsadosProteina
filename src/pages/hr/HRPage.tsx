@@ -47,7 +47,8 @@ export default function HRPage() {
         recentChanges: [] as Employee[]
     })
 
-    const { storeId: currentStoreId } = useAuthStore()
+    const [stores, setStores] = useState<any[]>([])
+    const { storeId: currentStoreId, role: currentUserRole } = useAuthStore()
     const STORE_ID = currentStoreId || '00000000-0000-0000-0000-000000000001' // Fallback or handle null
 
     useEffect(() => {
@@ -59,19 +60,36 @@ export default function HRPage() {
         try {
 
             if (activeTab === 'employees' || activeTab === 'time') {
-                const data = await HRService.getEmployees(STORE_ID)
+                // If Super Admin or Admin, fetch all employees (pass undefined)
+                // Otherwise fetch for current store
+                const fetchStoreId = ['super_admin', 'admin'].includes(currentUserRole || '') ? undefined : STORE_ID
+
+                const [data, storesData] = await Promise.all([
+                    HRService.getEmployees(fetchStoreId),
+                    UserService.getStores()
+                ])
+                setStores(storesData || [])
 
                 // Calculate stats
-                // Mocking store names for now as we only fetch for current store usually
-                // In a real scenario we might need to fetch all stores if we are SuperAdmin
-                const activeCount = data.filter(e => e.is_active).length
-                const storeCount = { storeName: 'Tienda Actual', count: activeCount }
+                // const activeCount = data.filter(e => e.is_active).length
+
+                // Group by store for stats
+                const storeCounts: { [key: string]: number } = {}
+                data.filter(e => e.is_active).forEach(e => {
+                    const storeName = storesData?.find(s => s.id === e.store_id)?.name || 'Sin Tienda'
+                    storeCounts[storeName] = (storeCounts[storeName] || 0) + 1
+                })
+
+                const statsPerStore = Object.entries(storeCounts).map(([name, count]) => ({
+                    storeName: name,
+                    count
+                }))
 
                 // Recent changes: simple sort by created_at or updated if available (mocking with slice)
                 const recent = [...data].sort((a, b) => (new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())).slice(0, 5)
 
                 setStats({
-                    usersPerStore: [storeCount],
+                    usersPerStore: statsPerStore,
                     recentChanges: recent
                 })
 
@@ -165,8 +183,8 @@ export default function HRPage() {
                     password: formData.password,
                     full_name: `${formData.first_name} ${formData.last_name}`,
                     role: formData.role || 'cashier',
-                    store_id: STORE_ID,
-                    modules: ['dashboard', 'pos', 'orders'] as any[] // Default modules, cast to avoid lint error or import ModuleName
+                    store_id: formData.store_id || STORE_ID,
+                    modules: [] as any[]
                 }
                 const newUser = await UserService.createUser(userData)
                 if (newUser && newUser.user) {
@@ -182,13 +200,14 @@ export default function HRPage() {
                 salary_type: formData.salary_type,
                 salary_amount: formData.salary_amount,
                 is_active: formData.is_active,
-                store_id: STORE_ID,
+                store_id: formData.store_id || STORE_ID, // Use selected store or fallback
                 user_id: userId // Link the user
             }
 
             if (selectedEmployee) {
                 // Update User if needed
                 if (selectedEmployee.user_id) {
+                    const updates: any = {}
                     if (formData.password) {
                         try {
                             await UserService.resetPassword(selectedEmployee.user_id, formData.password)
@@ -196,12 +215,17 @@ export default function HRPage() {
                             console.error("Error updating password", pwError)
                         }
                     }
+
+                    // Check for Role or Store updates
                     if (formData.role && selectedEmployee.user?.role !== formData.role) {
-                        // Update user role
-                        const currentUser = await UserService.getUserById(selectedEmployee.user_id)
-                        if (currentUser) {
-                            await UserService.updateUser(selectedEmployee.user_id, { role: formData.role })
-                        }
+                        updates.role = formData.role
+                    }
+                    if (formData.store_id && selectedEmployee.user?.store_id !== formData.store_id) {
+                        updates.store_id = formData.store_id
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                        await UserService.updateUser(selectedEmployee.user_id, updates)
                     }
                 }
 
@@ -294,7 +318,8 @@ export default function HRPage() {
             ...emp,
             email: emp.user?.email,
             role: emp.user?.role,
-            create_user: false
+            create_user: false,
+            store_id: emp.store_id || currentStoreId || undefined
         })
         setIsDialogOpen(true)
     }
@@ -307,7 +332,8 @@ export default function HRPage() {
             position: 'Staff',
             // Default to Staff logic
             role: undefined,
-            create_user: false
+            create_user: false,
+            store_id: currentStoreId || undefined
         })
         setIsDialogOpen(true)
     }
@@ -448,21 +474,43 @@ export default function HRPage() {
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label>Rol de Sistema</Label>
-                                            <Select
-                                                value={formData.role}
-                                                onValueChange={v => setFormData({ ...formData, role: v as UserRole })}
-                                            >
-                                                <SelectTrigger><SelectValue placeholder="Seleccionar Rol" /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="admin">Administrador</SelectItem>
-                                                    <SelectItem value="manager">Gerente</SelectItem>
-                                                    <SelectItem value="cashier">Cajero</SelectItem>
-                                                    <SelectItem value="cook">Cocinero</SelectItem>
-                                                    <SelectItem value="delivery">Repartidor</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label>Rol de Sistema</Label>
+                                                <Select
+                                                    value={formData.role}
+                                                    onValueChange={v => setFormData({ ...formData, role: v as UserRole })}
+                                                >
+                                                    <SelectTrigger><SelectValue placeholder="Seleccionar Rol" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="admin">Administrador</SelectItem>
+                                                        <SelectItem value="manager">Gerente</SelectItem>
+                                                        <SelectItem value="cashier">Cajero</SelectItem>
+                                                        <SelectItem value="cook">Cocinero</SelectItem>
+                                                        <SelectItem value="delivery">Repartidor</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Tienda Asignada</Label>
+                                                <Select
+                                                    value={formData.store_id || currentStoreId || ''}
+                                                    onValueChange={v => setFormData({ ...formData, store_id: v })}
+                                                    disabled={currentUserRole !== 'super_admin'}
+                                                >
+                                                    <SelectTrigger><SelectValue placeholder="Cargando tiendas..." /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {stores.map(store => (
+                                                            <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                {currentUserRole === 'super_admin' ? (
+                                                    <p className="text-xs text-muted-foreground">Requerido para roles no-admin</p>
+                                                ) : (
+                                                    <p className="text-xs text-muted-foreground">Automáticamente asignado a tu tienda actual</p>
+                                                )}
+                                            </div>
                                         </div>
                                     </>
                                 )}
@@ -485,6 +533,7 @@ export default function HRPage() {
                             <TableRow>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Puesto</TableHead>
+                                <TableHead>Tienda</TableHead>
                                 <TableHead>Salario</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
@@ -493,13 +542,13 @@ export default function HRPage() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
+                                    <TableCell colSpan={6} className="text-center h-24">
                                         <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
                             ) : filteredEmployees.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                                         No se encontraron empleados.
                                     </TableCell>
                                 </TableRow>
@@ -512,12 +561,17 @@ export default function HRPage() {
                                                     {emp.first_name} {emp.last_name}
                                                 </span>
                                                 {emp.user_id && (
-                                                    <Badge variant="secondary" className="w-fit text-[10px] h-4 px-1 mt-1">Usuario Sistema</Badge>
+                                                    <Badge variant="secondary" className="w-fit text-[10px] h-4 px-1 mt-1">
+                                                        Usuario: {emp.user?.role || 'Sin Rol'}
+                                                    </Badge>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline">{emp.position}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {stores.find(s => s.id === emp.store_id)?.name || 'N/A'}
                                         </TableCell>
                                         <TableCell>
                                             ${emp.salary_amount?.toFixed(2)} / {
@@ -554,7 +608,7 @@ export default function HRPage() {
                     </Table>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     )
 
     /*

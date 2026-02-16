@@ -2,6 +2,8 @@ import { useAuthStore } from "@/store/auth.store"
 import { hasModuleAccess } from "@/config/permissions"
 import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, DollarSign, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store } from "lucide-react"
 import { Outlet, Link, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
@@ -30,7 +32,17 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false }: { to:
 }
 
 export function AppLayout() {
-    const { user, role, modules, signOut } = useAuthStore()
+    const { user, role, modules, signOut, storeId } = useAuthStore()
+    const [storeName, setStoreName] = useState<string>('')
+
+    useEffect(() => {
+        if (storeId) {
+            supabase.from('stores').select('name').eq('id', storeId).single()
+                .then(({ data }) => {
+                    if (data) setStoreName(data.name)
+                })
+        }
+    }, [storeId])
 
     const handleSignOut = async () => {
         await signOut()
@@ -62,7 +74,10 @@ export function AppLayout() {
                         Asados P.
                         <span className="text-[10px] absolute -top-1 -right-8 bg-blue-500 text-white px-1 rounded">BETA</span>
                     </div>
-                    <p className="text-xs text-white/60 mt-1 font-medium">ERP Management</p>
+                    <div className="mt-1">
+                        <p className="text-xs text-white/60 font-medium">ERP Management</p>
+                        {storeName && <p className="text-xs text-[#C1FF72] font-bold uppercase tracking-wider">{storeName}</p>}
+                    </div>
                 </div>
 
                 {/* Navigation */}

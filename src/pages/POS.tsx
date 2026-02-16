@@ -30,17 +30,20 @@ export default function POS() {
     const [customersList, setCustomersList] = useState<Customer[]>([])
     const [showCustomerSearch, setShowCustomerSearch] = useState(false)
     const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup')
-    const { user } = useAuthStore()
+    const { user, storeId } = useAuthStore()
 
     useEffect(() => {
-        loadProducts()
-    }, [])
+        if (storeId) {
+            loadProducts()
+        }
+    }, [storeId])
 
     const loadProducts = async () => {
+        if (!storeId) return
         try {
-            const storeId = '00000000-0000-0000-0000-000000000001'
             const data = await ProductService.getProducts(storeId)
-            setProducts(data.filter(p => p.is_active && p.sale_price && p.sale_price > 0))
+            // Filter inactive or invalid price products
+            setProducts(data.filter(p => p.is_active && (p.sale_price || 0) > 0))
         } catch (error) {
             console.error('Error loading products:', error)
         } finally {
@@ -54,7 +57,7 @@ export default function POS() {
             return
         }
         try {
-            const data = await CustomerService.searchCustomers(query)
+            const data = await CustomerService.searchCustomers(query, storeId || undefined)
             setCustomersList(data)
         } catch (error) {
             console.error('Error searching customers:', error)
@@ -93,11 +96,10 @@ export default function POS() {
     }
 
     const handleCheckout = async () => {
-        if (cart.length === 0) return
+        if (cart.length === 0 || !storeId) return
         setIsCheckingOut(true)
 
         try {
-            const storeId = '00000000-0000-0000-0000-000000000001'
             const subtotal = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
             const orderNumber = await OrderService.generateOrderNumber(storeId)
 

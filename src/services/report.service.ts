@@ -89,5 +89,81 @@ export const ReportService = {
             totalValuation,
             productCount: products.length
         }
+    },
+
+    async getSalesByStore(startDate: string, endDate: string) {
+        // Fetch all orders in range
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select('store_id, total, created_at, status, store:stores(name)')
+            .gte('created_at', startDate)
+            .lte('created_at', endDate)
+            .neq('status', 'cancelled')
+
+        if (error) throw error
+
+        const storeStats: Record<string, { id: string, name: string, totalSales: number, totalOrders: number }> = {}
+
+        const orderList = orders || []
+
+        orderList.forEach((order: any) => {
+            const storeId = order.store_id
+            if (!storeId) return
+
+            if (!storeStats[storeId]) {
+                storeStats[storeId] = {
+                    id: storeId,
+                    name: order.store?.name || 'Tienda Desconocida',
+                    totalSales: 0,
+                    totalOrders: 0
+                }
+            }
+
+            storeStats[storeId].totalSales += Number(order.total) || 0
+            storeStats[storeId].totalOrders += 1
+        })
+
+        return Object.values(storeStats).sort((a, b) => b.totalSales - a.totalSales)
+    },
+
+    async getWeeklySales(storeId: string) {
+        const today = new Date()
+        const startOfWeek = new Date(today)
+        startOfWeek.setDate(today.getDate() - 6) // Last 7 days
+        startOfWeek.setHours(0, 0, 0, 0)
+
+        const endOfWeek = new Date(today)
+        endOfWeek.setHours(23, 59, 59, 999)
+
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select('created_at, total')
+            .eq('store_id', storeId)
+            .gte('created_at', startOfWeek.toISOString())
+            .lte('created_at', endOfWeek.toISOString())
+            .neq('status', 'cancelled')
+
+        if (error) throw error
+
+        const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+        const weeklyStats = new Array(7).fill(0).map((_, i) => {
+            const d = new Date(startOfWeek)
+            d.setDate(d.getDate() + i)
+            return {
+                name: days[d.getDay()],
+                date: d.toISOString().split('T')[0],
+                total: 0
+            }
+        })
+
+        orders?.forEach((order: any) => {
+            const orderDate = order.created_at.split('T')[0]
+            const dayStat = weeklyStats.find(d => d.date === orderDate)
+            if (dayStat) {
+                dayStat.total += Number(order.total)
+            }
+        })
+
+        return weeklyStats
     }
 }

@@ -28,8 +28,13 @@ export default function ProductsPage({ viewMode }: ProductsPageProps) {
 
     const loadProducts = async () => {
         try {
+            // If super_admin/admin want to see all, we might need a selector. 
+            // For now, let's respect the current store context.
+            // If storeId is null (e.g. super admin with no store selected?), we might want to show all or prompt selection.
+            // Based on user request, we want store segregation.
+
             if (!storeId) {
-                console.warn('No store ID found for current user')
+                // Fallback or wait
                 return
             }
 

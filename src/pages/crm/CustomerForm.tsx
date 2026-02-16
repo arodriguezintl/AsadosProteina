@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { CustomerService } from '@/services/customer.service'
 import { OrderService } from '@/services/order.service'
+import { useAuthStore } from '@/store/auth.store'
 import type { CreateCustomerDTO } from '@/types/customers'
-// import type { Order } from '@/types/orders'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2, ArrowLeft, Save, ShoppingBag } from 'lucide-react'
@@ -16,7 +16,8 @@ export default function CustomerForm() {
     const { id } = useParams()
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
-    const [orders, setOrders] = useState<any[]>([]) // Using any for simplicity with item_count
+    const [orders, setOrders] = useState<any[]>([])
+    const { storeId } = useAuthStore()
 
     const { register, handleSubmit, setValue, formState: { errors } } = useForm<CreateCustomerDTO>({
         defaultValues: {
@@ -62,7 +63,12 @@ export default function CustomerForm() {
             if (id && id !== 'new') {
                 await CustomerService.updateCustomer(id, data)
             } else {
-                await CustomerService.createCustomer(data)
+                if (!storeId) {
+                    alert('Error: No se ha identificado la tienda actual.')
+                    setLoading(false)
+                    return
+                }
+                await CustomerService.createCustomer({ ...data, store_id: storeId })
             }
             navigate('/crm/customers')
         } catch (error) {

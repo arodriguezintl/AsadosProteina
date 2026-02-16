@@ -35,6 +35,8 @@ export default function UsersPage() {
 
     const { role: currentUserRole, storeId: currentStoreId } = useAuthStore()
 
+    console.error('UsersPage Debug:', { currentUserRole, currentStoreId, storesCount: stores.length })
+
     const AVAILABLE_MODULES: { id: string, label: string }[] = [
         { id: 'dashboard', label: 'Dashboard' },
         { id: 'pos', label: 'Punto de Venta' },
@@ -44,6 +46,7 @@ export default function UsersPage() {
         { id: 'hr', label: 'Recursos Humanos' },
         { id: 'finance', label: 'Finanzas' },
         { id: 'reports', label: 'Reportes' },
+        { id: 'stores', label: 'Tiendas' },
         { id: 'admin', label: 'Administración' },
     ]
 
@@ -80,8 +83,8 @@ export default function UsersPage() {
         e.preventDefault()
         setLoading(true)
         try {
-            // Determine store_id: if super_admin uses form value, if admin uses their own store
-            const finalStoreId = currentUserRole === 'super_admin' ? formData.store_id : currentStoreId
+            // Determine store_id: if super_admin OR admin uses form value
+            const finalStoreId = (currentUserRole === 'super_admin' || currentUserRole === 'admin') ? formData.store_id : currentStoreId
 
             if (selectedUser) {
                 // Update existing user
@@ -90,7 +93,7 @@ export default function UsersPage() {
                     role: formData.role,
                     store_id: finalStoreId || null,
                     modules: formData.modules as any,
-                    is_active: formData.role !== 'super_admin' ? true : selectedUser.is_active // Prevent deactivating super admin by mistake? No, logical keep as is.
+                    is_active: (currentUserRole !== 'super_admin' && currentUserRole !== 'admin') ? true : selectedUser.is_active
                 })
             } else {
                 // Create new user
@@ -123,7 +126,7 @@ export default function UsersPage() {
             password: '',
             full_name: '',
             role: 'cashier',
-            store_id: currentUserRole === 'admin' ? (currentStoreId || '') : '', // Pre-fill for admin?
+            store_id: '', // Admin should also start empty or forced to select? Let's generic empty.
             modules: []
         })
     }
@@ -314,14 +317,15 @@ export default function UsersPage() {
                                     </Select>
                                 </div>
 
-                                {currentUserRole === 'super_admin' && (
+                                {(currentUserRole === 'super_admin' || currentUserRole === 'admin') && (
                                     <div className="space-y-2">
                                         <Label>Tienda</Label>
                                         <Select
                                             value={formData.store_id}
                                             onValueChange={(v) => setFormData({ ...formData, store_id: v })}
+                                            disabled={false}
                                         >
-                                            <SelectTrigger><SelectValue placeholder="Seleccionar tienda" /></SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder={currentStoreId ? "Seleccionar tienda" : "Sin tienda asignada"} /></SelectTrigger>
                                             <SelectContent>
                                                 {stores.map(store => (
                                                     <SelectItem key={store.id} value={store.id}>
@@ -330,7 +334,7 @@ export default function UsersPage() {
                                                 ))}
                                             </SelectContent>
                                         </Select>
-                                        <p className="text-xs text-muted-foreground">Requerido para roles no-admin</p>
+                                        {/* Removed the restricted view for admin since they can now select */}
                                     </div>
                                 )}
                             </div>

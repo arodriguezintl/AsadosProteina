@@ -3,16 +3,20 @@ import type { Employee, WorkShift, Payroll } from '@/types/hr'
 
 export const HRService = {
     // --- Employees ---
-    async getEmployees(storeId: string) {
-        const { data, error } = await supabase
+    async getEmployees(storeId?: string) {
+        let query = supabase
             .schema('public')
             .from('employees')
             .select(`
                 *,
                 user:user_profiles(*)
             `)
-            .eq('store_id', storeId)
-            .order('first_name')
+
+        if (storeId) {
+            query = query.eq('store_id', storeId)
+        }
+
+        const { data, error } = await query.order('first_name')
 
         if (error) throw error
         return data as Employee[]

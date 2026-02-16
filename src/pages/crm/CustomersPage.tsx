@@ -7,18 +7,24 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Loader2, Plus, Search, User, Trash2 } from 'lucide-react'
 
+import { useAuthStore } from '@/store/auth.store'
+
 export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
+    const { storeId } = useAuthStore()
 
     useEffect(() => {
-        loadCustomers()
-    }, [])
+        if (storeId) {
+            loadCustomers()
+        }
+    }, [storeId])
 
     const loadCustomers = async () => {
+        if (!storeId) return
         try {
-            const data = await CustomerService.getCustomers()
+            const data = await CustomerService.getCustomers(storeId)
             setCustomers(data)
         } catch (error) {
             console.error('Error loading customers:', error)

@@ -2,11 +2,16 @@ import { supabase } from '@/lib/supabase'
 import type { Customer, CreateCustomerDTO, UpdateCustomerDTO } from '@/types/customers'
 
 export const CustomerService = {
-    async getCustomers() {
-        const { data, error } = await supabase
+    async getCustomers(storeId?: string) {
+        let query = supabase
             .from('customers')
             .select('*')
-            .order('full_name')
+
+        if (storeId) {
+            query = query.eq('store_id', storeId)
+        }
+
+        const { data, error } = await query.order('full_name')
 
         if (error) throw error
         return data as Customer[]
@@ -55,12 +60,17 @@ export const CustomerService = {
         if (error) throw error
     },
 
-    async searchCustomers(query: string) {
-        const { data, error } = await supabase
+    async searchCustomers(query: string, storeId?: string) {
+        let dbQuery = supabase
             .from('customers')
             .select('*')
             .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%`)
-            .limit(10)
+
+        if (storeId) {
+            dbQuery = dbQuery.eq('store_id', storeId)
+        }
+
+        const { data, error } = await dbQuery.limit(10)
 
         if (error) throw error
         return data as Customer[]
@@ -89,12 +99,18 @@ export const CustomerService = {
         return data as Customer
     },
 
-    async getNewCustomersCount(startDate: string, endDate: string) {
-        const { count, error } = await supabase
+    async getNewCustomersCount(startDate: string, endDate: string, storeId?: string) {
+        let query = supabase
             .from('customers')
             .select('*', { count: 'exact', head: true })
             .gte('created_at', startDate)
             .lte('created_at', endDate)
+
+        if (storeId) {
+            query = query.eq('store_id', storeId)
+        }
+
+        const { count, error } = await query
 
         if (error) throw error
         return count || 0

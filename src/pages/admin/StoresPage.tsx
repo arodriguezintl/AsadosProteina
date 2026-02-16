@@ -30,6 +30,7 @@ export default function StoresPage() {
     const [stores, setStores] = useState<StoreData[]>([])
     const [managers, setManagers] = useState<UserProfile[]>([])
     const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedStore, setSelectedStore] = useState<StoreData | null>(null)
     const [formData, setFormData] = useState({
@@ -50,14 +51,47 @@ export default function StoresPage() {
     const loadData = async () => {
         setLoading(true)
         try {
-            const [storesData, usersData] = await Promise.all([
-                StoreService.getStores(),
-                UserService.getUsers()
-            ])
-            setStores(storesData as any)
-            setManagers(usersData.filter(u => u.role === 'manager' || u.role === 'admin'))
+            console.log('Loading data...')
+
+            // 1. Fetch Users first (needed for manager mapping)
+            let allUsers: UserProfile[] = []
+            try {
+                const usersData = await UserService.getUsers()
+                if (usersData) {
+                    allUsers = usersData
+                    setManagers(usersData.filter(u => u.role === 'manager' || u.role === 'admin'))
+                }
+            } catch (userError) {
+                console.warn('Error loading users (likely RLS restricted):', userError)
+                // Proceed without users, managers will just be unmapped
+            }
+
+            // 2. Fetch Stores
+            try {
+                const storesData = await StoreService.getStores()
+                console.log('Stores loaded (raw):', storesData)
+
+                if (storesData) {
+                    // 3. Manual Join with fallback
+                    const enrichedStores = storesData.map((store: any) => {
+                        const managerProfile = allUsers.find(u => u.id === store.manager_id)
+                        return {
+                            ...store,
+                            manager: store.manager_id ? {
+                                full_name: managerProfile?.full_name || 'No disponible'
+                            } : undefined
+                        }
+                    })
+
+                    setStores(enrichedStores)
+                }
+            } catch (storeError) {
+                console.error('Error loading stores:', storeError)
+                alert('Error al cargar las tiendas via API')
+            }
+
         } catch (error) {
-            console.error('Error loading data:', error)
+            console.error('General error loading data:', error)
         } finally {
             setLoading(false)
         }
@@ -95,7 +129,7 @@ export default function StoresPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
+        setSubmitting(true)
         try {
             const payload = {
                 name: formData.name,
@@ -117,9 +151,14 @@ export default function StoresPage() {
             setIsDialogOpen(false)
             loadData()
         } catch (error: any) {
-            alert(error?.message || 'Error al guardar tienda')
+            console.error('Error in store form:', error)
+            if (error?.message?.includes('stores_code_key') || error?.code === '23505') {
+                alert('Error: El código de la tienda ya existe. Por favor use otro código.')
+            } else {
+                alert(error?.message || 'Error al guardar tienda')
+            }
         } finally {
-            setLoading(false)
+            setSubmitting(false)
         }
     }
 
@@ -230,8 +269,8 @@ export default function StoresPage() {
                             </div>
 
                             <DialogFooter>
-                                <Button type="submit" disabled={loading}>
-                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                <Button type="submit" disabled={submitting}>
+                                    {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     Guardar
                                 </Button>
                             </DialogFooter>

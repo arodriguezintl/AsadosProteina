@@ -5,7 +5,7 @@ import { OrderService } from '@/services/order.service'
 import { ReportService } from '@/services/report.service'
 import { CustomerService } from '@/services/customer.service'
 import { useAuthStore } from '@/store/auth.store'
-import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowUpRight, ArrowDownRight, Clock, CheckCircle2 } from 'lucide-react'
+import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowDownRight, Clock, CheckCircle2 } from 'lucide-react'
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -38,12 +38,13 @@ export default function Dashboard() {
             todayEnd.setHours(23, 59, 59, 999)
 
             // Parallel data fetching
-            const [todaysActivity, activeOrdersList, recentOrders, recentTransactions, newCustomersCount] = await Promise.all([
+            const [todaysActivity, activeOrdersList, recentOrders, recentTransactions, newCustomersCount, weeklySales] = await Promise.all([
                 ReportService.getSalesReport(storeId!, todayStart.toISOString(), todayEnd.toISOString()),
-                OrderService.getOrders(['pending', 'preparing', 'ready', 'in_delivery']),
-                OrderService.getOrders(undefined, 5),
+                OrderService.getOrders(['pending', 'preparing', 'ready', 'in_delivery'], undefined, storeId!),
+                OrderService.getOrders(undefined, 5, storeId!),
                 FinanceService.getTransactions(storeId!, { limit: 5 }),
-                CustomerService.getNewCustomersCount(todayStart.toISOString(), todayEnd.toISOString())
+                CustomerService.getNewCustomersCount(todayStart.toISOString(), todayEnd.toISOString(), storeId!),
+                ReportService.getWeeklySales(storeId!)
             ])
 
             setStats({
@@ -53,27 +54,18 @@ export default function Dashboard() {
                 avgTicket: todaysActivity.avgTicket
             })
 
-            // Mock Weekly Data
-            setWeeklyStats([
-                { name: 'Lun', total: 450 },
-                { name: 'Mar', total: 600 },
-                { name: 'Mie', total: 800 },
-                { name: 'Jue', total: 1200 },
-                { name: 'Vie', total: 900 },
-                { name: 'Sab', total: 1500 },
-                { name: 'Dom', total: 1300 },
-            ])
+            setWeeklyStats(weeklySales)
 
             // Real Activity
             const activity = [
-                ...recentOrders.map(o => ({
+                ...recentOrders.map((o: any) => ({
                     id: o.order_number || 'Pedido #' + o.id.slice(0, 4),
                     time: formatDistanceToNow(new Date(o.created_at), { addSuffix: true, locale: es }),
                     date: new Date(o.created_at),
                     amount: Number(o.total),
                     type: 'income'
                 })),
-                ...recentTransactions.map(t => ({
+                ...recentTransactions.map((t: any) => ({
                     id: t.description || 'Movimiento',
                     time: formatDistanceToNow(new Date(t.transaction_date), { addSuffix: true, locale: es }),
                     date: new Date(t.transaction_date),
@@ -110,9 +102,6 @@ export default function Dashboard() {
                             <div className="p-2 bg-asados-lime/20 rounded-xl text-asados-dark">
                                 <DollarSign className="w-5 h-5" />
                             </div>
-                            <span className="flex items-center text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                +12% <ArrowUpRight className="w-3 h-3 ml-1" />
-                            </span>
                         </div>
                         <div>
                             <p className="text-asados-muted text-sm font-medium">Ventas Hoy</p>
@@ -141,9 +130,6 @@ export default function Dashboard() {
                             <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
                                 <Users className="w-5 h-5" />
                             </div>
-                            <span className="flex items-center text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                                +5 <ArrowUpRight className="w-3 h-3 ml-1" />
-                            </span>
                         </div>
                         <div>
                             <p className="text-asados-muted text-sm font-medium">Clientes Nuevos</p>
