@@ -55,14 +55,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         orders: ['view', 'create', 'edit'],
         inventory: ['view', 'create', 'edit'],
         recipes: ['view', 'create', 'edit'],
-        finance: ['view'],
+        finance: [], // REVOKED: Admin only
         reports: ['view'],
         crm: ['view', 'create', 'edit'],
-        hr: ['view'],
+        hr: ['view', 'create', 'edit'], // Managers usually manage staff
         users: [],
-        stores: ['view'],
+        stores: [], // REVOKED: Admin only
         delivery: ['view', 'create', 'edit'],
-        payroll: ['view'],
+        payroll: [], // REVOKED: Admin only
     },
     cashier: {
         dashboard: ['view'],

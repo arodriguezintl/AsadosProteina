@@ -65,8 +65,8 @@ export default function POS() {
     }
 
     const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.global_product?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.global_product?.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     const addToCart = (product: Product) => {
@@ -191,7 +191,7 @@ export default function POS() {
                                     onClick={() => addToCart(product)}
                                 >
                                     <CardHeader className="p-4">
-                                        <CardTitle className="text-lg line-clamp-1" title={product.name}>{product.name}</CardTitle>
+                                        <CardTitle className="text-lg line-clamp-1" title={product.global_product?.name}>{product.global_product?.name}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-4 pt-0">
                                         <div className="flex items-center justify-between">
@@ -200,7 +200,7 @@ export default function POS() {
                                                 Stock: {product.current_stock}
                                             </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground mt-1">{product.category?.name}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">{product.global_product?.category?.name}</div>
                                     </CardContent>
                                 </Card>
                             ))}
@@ -301,7 +301,7 @@ export default function POS() {
                                 {cart.map(item => (
                                     <div key={item.product.id} className="flex items-center justify-between gap-2">
                                         <div className="flex-1">
-                                            <div className="font-medium line-clamp-1">{item.product.name}</div>
+                                            <div className="font-medium line-clamp-1">{item.product.global_product?.name}</div>
                                             <div className="text-sm text-muted-foreground">
                                                 ${item.product.sale_price} x {item.quantity}
                                             </div>

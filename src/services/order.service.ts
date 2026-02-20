@@ -61,7 +61,9 @@ export const OrderService = {
                 *,
                 items:order_items(
                     *,
-                    product:inventory_products(name)
+                    product:inventory_products(
+                        global_product:inventory_global_products(name)
+                    )
                 ),
                 customer:customers(full_name)
             `)
@@ -92,7 +94,7 @@ export const OrderService = {
             customer_name: order.customer?.full_name,
             items: order.items?.map((item: any) => ({
                 ...item,
-                product_name: item.product?.name
+                product_name: item.product?.global_product?.name || 'Unknown Product'
             }))
         })) as Order[]
     },
@@ -104,7 +106,9 @@ export const OrderService = {
                 *,
                 items:order_items(
                     *,
-                    product:inventory_products(name)
+                    product:inventory_products(
+                        global_product:inventory_global_products(name)
+                    )
                 ),
                 customer:customers(full_name, phone),
                 delivery:delivery_orders(
@@ -124,7 +128,7 @@ export const OrderService = {
             customer_phone: order.customer?.phone,
             items: order.items?.map((item: any) => ({
                 ...item,
-                product_name: item.product?.name
+                product_name: item.product?.global_product?.name || 'Unknown Product'
             })),
             delivery_info: order.delivery ? {
                 ...order.delivery,

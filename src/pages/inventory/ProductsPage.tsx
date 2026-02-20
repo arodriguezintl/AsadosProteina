@@ -49,20 +49,23 @@ export default function ProductsPage({ viewMode }: ProductsPageProps) {
 
 
     const filteredProducts = products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        const name = p.global_product?.name || p.name || ''
+        const sku = p.global_product?.sku || p.sku || ''
+
+        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            sku.toLowerCase().includes(searchTerm.toLowerCase())
 
         if (!matchesSearch) return false
 
         if (viewMode === 'inventory') {
             // Show everything EXCEPT finished products (Raw Materials, Consumables, Equipment, etc.)
             // Or if user strictly wants "Only Raw Materials", we might need to adjust, but usually Inventory implies "Internal stuff"
-            return p.category?.type !== 'finished_product'
+            return p.global_product?.category?.type !== 'finished_product'
         }
 
         if (viewMode === 'menu') {
             // Show ONLY finished products
-            return p.category?.type === 'finished_product'
+            return p.global_product?.category?.type === 'finished_product'
         }
 
         return true
@@ -227,13 +230,13 @@ export default function ProductsPage({ viewMode }: ProductsPageProps) {
                         ) : (
                             filteredProducts.map((product) => (
                                 <TableRow key={product.id} className={!product.is_active ? "bg-muted/50" : ""}>
-                                    <TableCell className="font-medium">{product.name}</TableCell>
-                                    <TableCell>{product.category?.name || '-'}</TableCell>
-                                    <TableCell>{product.sku}</TableCell>
+                                    <TableCell className="font-medium">{product.global_product?.name || 'Sin Nombre'}</TableCell>
+                                    <TableCell>{product.global_product?.category?.name || '-'}</TableCell>
+                                    <TableCell>{product.global_product?.sku || '-'}</TableCell>
                                     <TableCell>${product.sale_price?.toFixed(2) || '-'}</TableCell>
                                     <TableCell>
                                         <span className={product.current_stock <= product.min_stock ? "text-red-500 font-bold" : ""}>
-                                            {product.current_stock} {product.unit_of_measure}
+                                            {product.current_stock} {product.global_product?.unit_of_measure || 'unid'}
                                         </span>
                                     </TableCell>
                                     <TableCell>
@@ -269,7 +272,7 @@ export default function ProductsPage({ viewMode }: ProductsPageProps) {
             <Dialog open={restockDialog.open} onOpenChange={(open) => !open && setRestockDialog({ ...restockDialog, open: false })}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Resurtir Inventario - {restockDialog.product?.name}</DialogTitle>
+                        <DialogTitle>Resurtir Inventario - {restockDialog.product?.global_product?.name}</DialogTitle>
                         <DialogDescription>
                             Registra una entrada de inventario para este producto.
                         </DialogDescription>

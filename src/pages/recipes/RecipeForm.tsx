@@ -49,10 +49,10 @@ export default function RecipeForm() {
             const allProducts = await ProductService.getProducts(storeId)
 
             // Filter products for "Final Product" selection (finished products or no category)
-            setProducts(allProducts.filter(p => !p.category || p.category.type === 'finished_product'))
+            setProducts(allProducts.filter(p => !p.global_product?.category || p.global_product.category.type === 'finished_product'))
 
             // Filter raw materials (ingredients) - STRICTLY only category type 'raw_material'
-            const filteredRaw = allProducts.filter(p => p.category?.type === 'raw_material')
+            const filteredRaw = allProducts.filter(p => p.global_product?.category?.type === 'raw_material')
             setRawMaterials(filteredRaw)
 
             if (id) {
@@ -187,7 +187,7 @@ export default function RecipeForm() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             {products.map(p => (
-                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                <SelectItem key={p.id} value={p.id}>{p.global_product?.name}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
@@ -269,7 +269,7 @@ export default function RecipeForm() {
                                             <SelectContent>
                                                 {rawMaterials.map(p => (
                                                     <SelectItem key={p.id} value={p.id}>
-                                                        {p.name} ({p.unit_of_measure}) - ${p.unit_cost}/u
+                                                        {p.global_product?.name} ({p.global_product?.unit_of_measure}) - ${p.unit_cost}/u
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
