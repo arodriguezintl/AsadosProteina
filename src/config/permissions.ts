@@ -7,6 +7,8 @@ export type ModuleName =
     | 'inventory'
     | 'recipes'
     | 'finance'
+    | 'transactions'
+    | 'finance_categories'
     | 'reports'
     | 'crm'
     | 'hr'
@@ -20,13 +22,15 @@ export type Permission = 'view' | 'create' | 'edit' | 'delete'
 // Define what modules each role can access
 export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>> = {
     super_admin: {
-        dashboard: ['view'],
+        dashboard: ['view', 'create', 'edit', 'delete'],
         pos: ['view', 'create', 'edit', 'delete'],
         orders: ['view', 'create', 'edit', 'delete'],
         inventory: ['view', 'create', 'edit', 'delete'],
         recipes: ['view', 'create', 'edit', 'delete'],
         finance: ['view', 'create', 'edit', 'delete'],
-        reports: ['view'],
+        transactions: ['view', 'create', 'edit', 'delete'],
+        finance_categories: ['view', 'create', 'edit', 'delete'],
+        reports: ['view', 'create', 'edit', 'delete'],
         crm: ['view', 'create', 'edit', 'delete'],
         hr: ['view', 'create', 'edit', 'delete'],
         users: ['view', 'create', 'edit', 'delete'],
@@ -35,44 +39,50 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         payroll: ['view', 'create', 'edit', 'delete'],
     },
     admin: {
-        dashboard: ['view'],
+        dashboard: ['view', 'create', 'edit', 'delete'],
         pos: ['view', 'create', 'edit', 'delete'],
         orders: ['view', 'create', 'edit', 'delete'],
         inventory: ['view', 'create', 'edit', 'delete'],
         recipes: ['view', 'create', 'edit', 'delete'],
         finance: ['view', 'create', 'edit', 'delete'],
-        reports: ['view'],
-        crm: ['view', 'create', 'edit', 'delete'],
-        hr: ['view', 'create', 'edit', 'delete'],
-        users: [], // No access to user management
-        stores: ['view'], // Can view store details
+        transactions: ['view', 'create', 'edit', 'delete'],
+        finance_categories: ['view', 'create', 'edit', 'delete'],
+        reports: ['view', 'create', 'edit', 'delete'],
+        crm: ['view'],
+        hr: ['view'],
+        users: [],
+        stores: [],
         delivery: ['view', 'create', 'edit', 'delete'],
         payroll: ['view', 'create'],
     },
     manager: {
-        dashboard: ['view'],
-        pos: ['view', 'create', 'edit'],
+        dashboard: ['view', 'create', 'edit', 'delete'],
+        pos: ['view', 'create', 'edit', 'delete'],
         orders: ['view', 'create', 'edit'],
         inventory: ['view', 'create', 'edit'],
         recipes: ['view', 'create', 'edit'],
-        finance: [], // REVOKED: Admin only
+        finance: [],
+        transactions: ['view'],
+        finance_categories: [],
         reports: ['view'],
         crm: ['view', 'create', 'edit'],
-        hr: ['view', 'create', 'edit'], // Managers usually manage staff
+        hr: ['view'],
         users: [],
-        stores: [], // REVOKED: Admin only
+        stores: [],
         delivery: ['view', 'create', 'edit'],
-        payroll: [], // REVOKED: Admin only
+        payroll: [],
     },
     cashier: {
-        dashboard: ['view'],
+        dashboard: [],
         pos: ['view', 'create'],
         orders: ['view'],
-        inventory: ['view'],
-        recipes: ['view'],
+        inventory: [],
+        recipes: [],
         finance: [],
+        transactions: [],
+        finance_categories: [],
         reports: [],
-        crm: ['view'],
+        crm: [],
         hr: [],
         users: [],
         stores: [],
@@ -86,6 +96,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         inventory: ['view'], // Check stock
         recipes: ['view'], // View recipes
         finance: [],
+        transactions: [],
+        finance_categories: [],
         reports: [],
         crm: [],
         hr: [],
@@ -101,6 +113,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         inventory: [],
         recipes: [],
         finance: [],
+        transactions: [],
+        finance_categories: [],
         reports: [],
         crm: ['view'], // View customer details for delivery
         delivery: ['view', 'edit'], // Delivery specific module
@@ -116,6 +130,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         inventory: ['view'],
         recipes: ['view'],
         finance: ['view', 'create', 'edit', 'delete'], // Full finance access
+        transactions: ['view', 'create', 'edit', 'delete'],
+        finance_categories: ['view', 'create', 'edit', 'delete'],
         reports: ['view'],
         crm: [],
         hr: ['view'], // View payroll/employee costs

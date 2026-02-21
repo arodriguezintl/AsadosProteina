@@ -561,21 +561,25 @@ export default function UsersPage() {
                                                     >
                                                         <UserCog className="h-4 w-4" />
                                                     </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => openPasswordDialog(user)}
-                                                    >
-                                                        <Key className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleToggleActive(user)}
-                                                        className={user.is_active ? 'text-red-500' : 'text-green-500'}
-                                                    >
-                                                        {user.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                                                    </Button>
+                                                    {(currentUserRole === 'super_admin' || currentUserRole === 'admin') && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => openPasswordDialog(user)}
+                                                        >
+                                                            <Key className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    {(currentUserRole === 'super_admin' || currentUserRole === 'admin') && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleToggleActive(user)}
+                                                            className={user.is_active ? 'text-red-500' : 'text-green-500'}
+                                                        >
+                                                            {user.is_active ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </TableCell>
                                         </TableRow>
