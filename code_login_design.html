@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asados Proteina Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Dancing+Script:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#F26E21", // Vibrant Orange from logo
+                        "background-light": "#F8F9FA",
+                        "background-dark": "#121212",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#1E1E1E",
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        script: ['Dancing Script', 'cursive'],
+                    },
+                    borderRadius: {
+                        DEFAULT: "12px",
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 15px rgba(242, 110, 33, 0.3)',
+                    }
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .logo-script {
+            font-family: 'Dancing Script', cursive;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-center p-6 transition-colors duration-300">
+<div class="absolute top-6 right-6 flex space-x-4">
+<button class="text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors">
+<span class="material-icons">dark_mode</span>
+</button>
+</div>
+<div class="w-full max-w-sm">
+<div class="text-center mb-10">
+<div class="inline-flex flex-col items-center justify-center">
+<div class="relative">
+<h1 class="text-5xl md:text-6xl text-black dark:text-white logo-script transform -rotate-6">
+                        Asados
+                    </h1>
+<span class="absolute -right-6 -top-2 text-primary">
+<svg class="w-8 h-8 md:w-10 md:h-10 fill-current" viewBox="0 0 24 24">
+<path d="M12,22c4.97,0,9-4.03,9-9c0-4.97-9-13-9-13S3,8.03,3,13C3,17.97,7.03,22,12,22z M12.6,18.8 c-0.6,0.7-1.7,0.6-2.1-0.2c-0.6-1.1-1.3-2.5-0.7-4c0.1-0.2,0.3-0.3,0.5-0.2c0.2,0.1,0.3,0.4,0.2,0.6c-0.5,1.2,0,2.4,0.5,3.3 C11.2,18.7,11.9,19.2,12.6,18.8z"></path>
+</svg>
+</span>
+</div>
+<h2 class="text-2xl md:text-3xl font-bold text-primary tracking-wide -mt-2 ml-10">
+                    Proteina
+                </h2>
+</div>
+<p class="mt-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                Bienvenido de nuevo
+            </p>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft p-8 space-y-6 border border-gray-100 dark:border-gray-800">
+<form action="#" class="space-y-5">
+<div class="space-y-2">
+<label class="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1" for="email">
+                        Correo electrónico
+                    </label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons text-gray-400 group-focus-within:text-primary transition-colors text-xl">email</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm" id="email" name="email" placeholder="nombre@ejemplo.com" type="email"/>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center ml-1">
+<label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="password">
+                            Contraseña
+                        </label>
+<a class="text-xs text-primary hover:text-orange-600 dark:hover:text-orange-400 font-medium transition-colors" href="#">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons text-gray-400 group-focus-within:text-primary transition-colors text-xl">lock</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm" id="password" name="password" placeholder="••••••••" type="password"/>
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
+<span class="material-icons text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl">visibility_off</span>
+</div>
+</div>
+</div>
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 cursor-pointer" id="remember-me" name="remember-me" type="checkbox"/>
+<label class="ml-2 block text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none" for="remember-me">
+                        Recordarme
+                    </label>
+</div>
+<button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-glow text-sm font-semibold text-white bg-primary hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all transform hover:-translate-y-0.5" type="submit">
+                    Iniciar Sesión
+                </button>
+</form>
+<div class="relative mt-6">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+</div>
+<div class="relative flex justify-center text-sm">
+<span class="px-2 bg-surface-light dark:bg-surface-dark text-gray-500 dark:text-gray-400">
+                        O continúa con
+                    </span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 mt-6">
+<button class="flex items-center justify-center px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+<img alt="Google logo" class="h-5 w-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr2pLvOvMZKLiyqY_MojvJ_GWSlqwH8s4-5ZnWMlOXR3dyd2eypa80ul5f536SqS7sGzZXHGuzuN86rP9YfcGjZqQqyqSG_RZACa40IIv2B217Ny5y8RFaRwKCZzj1GRLiO6dKjfzd5kF4PitnR7cxrxTD9plAUQn9KTSPFfqiZCGpM1Z3vNYO0IAREGqLd2NL1xLUTUf5iIP9Zt38saCDiPKc69N2KSPf-OO9dEfztdkCbchh0TOxV3u5AfyfnicLXWJO3gqOhXY"/>
+</button>
+<button class="flex items-center justify-center px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+<img alt="Facebook logo" class="h-5 w-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFPfJ7uzUXli1C9fNcDlezt--TOvnRgQ4KJNjyxMGIaHsXLXwRUeT8ZZcwG6TYYRkzdFEzH9BG2HE77-BGOmAn9U7A1D6pxup-T3pGn8WKof3mvzqn_gVe-8F7GeZRlT3Tm3UlF3q_jTaQAJIo8EQ5E5HZqdtAb43QjPY71Q1fcBYubO1IAmSNmFKSBDcY9jktCiibi2AsgJKl5zUSf2WMLOgyq_96jzTAYPgDumEVYsxNlnajKFO_iTiBbSOoPFzhc7aCPijQANY"/>
+</button>
+</div>
+</div>
+<div class="text-center mt-8">
+<p class="text-sm text-gray-500 dark:text-gray-400">
+                ¿No tienes una cuenta? 
+                <a class="font-medium text-primary hover:text-orange-600 dark:hover:text-orange-400 transition-colors" href="#">
+                    Regístrate
+                </a>
+</p>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-primary to-orange-600"></div>
+
+</body></html>

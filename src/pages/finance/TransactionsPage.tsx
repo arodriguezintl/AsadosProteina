@@ -26,6 +26,7 @@ export default function TransactionsPage() {
         amount: 0,
         description: '',
         category_id: '',
+        payment_method: 'cash' as 'cash' | 'transfer' | 'card',
         transaction_date: new Date().toISOString().split('T')[0]
     })
 
@@ -74,6 +75,7 @@ export default function TransactionsPage() {
                 amount: 0,
                 description: '',
                 category_id: '',
+                payment_method: 'cash',
                 transaction_date: new Date().toISOString().split('T')[0]
             })
             loadData()
@@ -167,6 +169,20 @@ export default function TransactionsPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
+                                <Label>Método de Pago</Label>
+                                <Select
+                                    value={formData.payment_method}
+                                    onValueChange={(v: any) => setFormData({ ...formData, payment_method: v })}
+                                >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="cash">Efectivo</SelectItem>
+                                        <SelectItem value="transfer">Transferencia</SelectItem>
+                                        <SelectItem value="card">Tarjeta</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
                                 <Label>Descripción</Label>
                                 <Input
                                     required
@@ -187,7 +203,7 @@ export default function TransactionsPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
+            < div className="grid gap-4 md:grid-cols-3" >
                 <Card className="border-l-4 border-l-green-500">
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -222,10 +238,10 @@ export default function TransactionsPage() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
+            </div >
 
             {/* Filters */}
-            <div className="flex gap-4 items-center">
+            < div className="flex gap-4 items-center" >
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -248,10 +264,10 @@ export default function TransactionsPage() {
                         </SelectContent>
                     </Select>
                 </div>
-            </div>
+            </div >
 
             {/* Transactions Table */}
-            <Card>
+            < Card >
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
@@ -259,6 +275,7 @@ export default function TransactionsPage() {
                                 <TableHead>Fecha</TableHead>
                                 <TableHead>Descripción</TableHead>
                                 <TableHead>Categoría</TableHead>
+                                <TableHead>Método</TableHead>
                                 <TableHead>Tipo</TableHead>
                                 <TableHead className="text-right">Monto</TableHead>
                             </TableRow>
@@ -287,6 +304,14 @@ export default function TransactionsPage() {
                                             <Badge variant="outline">{trans.category?.name || 'Sin categoría'}</Badge>
                                         </TableCell>
                                         <TableCell>
+                                            <span className="text-xs capitalize">
+                                                {trans.payment_method === 'cash' ? 'Efectivo' :
+                                                    trans.payment_method === 'card' ? 'Tarjeta' :
+                                                        trans.payment_method === 'transfer' ? 'Transferencia' :
+                                                            trans.payment_method || '-'}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell>
                                             {trans.type === 'income' ? (
                                                 <Badge className="bg-green-500">Ingreso</Badge>
                                             ) : (
@@ -302,7 +327,7 @@ export default function TransactionsPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
-            </Card>
-        </div>
+            </Card >
+        </div >
     )
 }

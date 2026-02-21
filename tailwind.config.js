@@ -13,41 +13,10 @@ export default {
         'asados-bg': '#F4F7F2',        // Gris verdoso suave (Fondo General)
         'asados-surface': '#FFFFFF',   // Blanco (Tarjetas/Widgets)
         'asados-muted': '#6B7280',     // Gris (Textos secundarios)
-        // Keep existing shadcn colors if needed, but for now we prioritize the requested ones.
-        // We might want to alias these to primary/secondary/etc later if we want to fully replace shadcn theme.
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
+      },
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
+        script: ['Dancing Script', 'cursive'],
       },
       borderRadius: {
         '3xl': '1.5rem',
@@ -57,7 +26,8 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        'soft': '0 10px 40px rgba(0, 0, 0, 0.04)',
+        'soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
+        'glow': '0 0 15px rgba(242, 110, 33, 0.3)',
       },
       keyframes: {
         "accordion-down": {

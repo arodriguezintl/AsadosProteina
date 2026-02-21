@@ -6,8 +6,6 @@ import ProductsPage from '@/pages/inventory/ProductsPage'
 import ProductForm from '@/pages/inventory/ProductForm'
 import CategoriesPage from '@/pages/inventory/CategoriesPage'
 import FinanceCategoriesPage from '@/pages/finance/FinanceCategoriesPage'
-import ExpensesPage from '@/pages/finance/ExpensesPage'
-import ExpenseForm from '@/pages/finance/ExpenseForm'
 import FinanceDashboard from '@/pages/finance/FinanceDashboard'
 import TransactionsPage from '@/pages/finance/TransactionsPage'
 import RecipesPage from './pages/recipes/RecipesPage'
@@ -88,8 +86,6 @@ function App() {
           <Route path="/inventory/categories" element={<CategoriesPage />} />
           <Route path="/finance/categories" element={<FinanceCategoriesPage />} />
           <Route path="/finance/transactions" element={<TransactionsPage />} />
-          <Route path="/finance/expenses" element={<ExpensesPage />} />
-          <Route path="/finance/expenses/new" element={<ExpenseForm />} />
           <Route path="/finance" element={<FinanceDashboard />} />
 
           <Route path="/recipes" element={<RecipesPage />} />

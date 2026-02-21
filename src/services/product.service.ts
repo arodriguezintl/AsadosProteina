@@ -1,32 +1,24 @@
 import { supabase } from '@/lib/supabase'
-import type { Product, Category, CreateProductDTO, UpdateProductDTO, CreateCategoryDTO, UpdateCategoryDTO, GlobalProduct } from '@/types/inventory'
+import type { Product, Category, CreateProductDTO, UpdateProductDTO, CreateCategoryDTO, UpdateCategoryDTO } from '@/types/inventory'
 
 export const ProductService = {
     async getProducts(storeId: string) {
-        // 1. Fetch products with global product details
+        // 1. Fetch products
         const { data: products, error } = await supabase
             .from('inventory_products')
             .select(`
                 *,
-                global_product:inventory_global_products (
-                    *,
-                    category:inventory_categories (*)
-                )
+                category:inventory_categories (*)
             `)
             .eq('store_id', storeId)
 
         if (error) throw error
 
-        // Map to flatten structure for UI convenience if needed, 
-        // but for now we just return the joined data. 
-        // The type 'Product' has been updated to include 'global_product'.
-
-        // We might want to sort in JS because sorting by joined column in Supabase can be tricky depending on version
         const typedProducts = (products || []) as Product[]
 
         return typedProducts.sort((a, b) => {
-            const nameA = a.global_product?.name || ''
-            const nameB = b.global_product?.name || ''
+            const nameA = a.name || ''
+            const nameB = b.name || ''
             return nameA.localeCompare(nameB)
         })
     },
@@ -76,40 +68,25 @@ export const ProductService = {
 
 
     async createProduct(product: CreateProductDTO) {
-        let globalId = product.global_product_id
-
-        // 1. If we need to create a new global product first
-        if (!globalId && product.new_global_product) {
-            const { data: newGlobal, error: globalError } = await supabase
-                .from('inventory_global_products')
-                .insert(product.new_global_product)
-                .select()
-                .single()
-
-            if (globalError) throw globalError
-            globalId = newGlobal.id
-        }
-
-        if (!globalId) throw new Error("Missing global_product_id or new_global_product")
-
-        // 2. Create store product linked to global
         const { data, error } = await supabase
             .from('inventory_products')
             .insert({
                 store_id: product.store_id,
-                global_product_id: globalId,
+                category_id: product.category_id,
+                name: product.name,
+                sku: product.sku,
+                description: product.description,
+                unit_of_measure: product.unit_of_measure,
                 min_stock: product.min_stock,
                 unit_cost: product.unit_cost,
                 sale_price: product.sale_price,
                 is_active: product.is_active ?? true,
-                current_stock: product.current_stock ?? 0
+                current_stock: product.current_stock ?? 0,
+                image_url: product.image_url
             })
             .select(`
                 *,
-                global_product:inventory_global_products (
-                    *,
-                    category:inventory_categories (*)
-                )
+                category:inventory_categories (*)
             `)
             .single()
 
@@ -118,60 +95,19 @@ export const ProductService = {
     },
 
     async updateProduct(id: string, updates: UpdateProductDTO) {
-        // 1. Update store specific fields
-        const { global_product_updates, ...storeUpdates } = updates
+        const { data, error } = await supabase
+            .from('inventory_products')
+            .update(updates)
+            .eq('id', id)
+            .select(`
+                *,
+                category:inventory_categories (*)
+            `)
+            .single()
 
-        let updatedProduct = null
+        if (error) throw error
 
-        if (Object.keys(storeUpdates).length > 0) {
-            const { data, error } = await supabase
-                .from('inventory_products')
-                .update(storeUpdates)
-                .eq('id', id)
-                .select(`
-                    *,
-                    global_product:inventory_global_products (
-                        *,
-                        category:inventory_categories (*)
-                    )
-                `)
-                .single()
-
-            if (error) throw error
-            updatedProduct = data
-        }
-
-        // 2. Update global fields if authorized (and requested)
-        // Note: This effectively updates it for ALL stores. User must be aware.
-        // We might want to restrict this to Admins only in the backend policies.
-        if (global_product_updates && updatedProduct) {
-            const globalId = updatedProduct.global_product_id
-            if (globalId) {
-                const { error: globalError } = await supabase
-                    .from('inventory_global_products')
-                    .update(global_product_updates)
-                    .eq('id', globalId)
-
-                if (globalError) throw globalError
-
-                // Re-fetch to get updated global data
-                const { data: refetched } = await supabase
-                    .from('inventory_products')
-                    .select(`
-                        *,
-                        global_product:inventory_global_products (
-                            *,
-                            category:inventory_categories (*)
-                        )
-                    `)
-                    .eq('id', id)
-                    .single()
-
-                updatedProduct = refetched
-            }
-        }
-
-        return updatedProduct as Product
+        return data as Product
     },
 
     async deleteProduct(id: string) {
@@ -186,7 +122,7 @@ export const ProductService = {
 
     async searchGlobalCatalog(query: string) {
         const { data, error } = await supabase
-            .from('inventory_global_products')
+            .from('inventory_products')
             .select(`
                 *,
                 category:inventory_categories (*)
@@ -195,24 +131,18 @@ export const ProductService = {
             .limit(20)
 
         if (error) throw error
-        return data as GlobalProduct[]
+        return data as Product[]
     },
 
-    // Kept for backward compatibility but using new structure
     async searchProducts(storeId: string, query: string) {
-        // This is trickier now because name is in the joined table.
-        // Supabase filtering on joined tables matches!
         const { data, error } = await supabase
             .from('inventory_products')
             .select(`
                 *,
-                global_product:inventory_global_products!inner(
-                    *,
-                    category:inventory_categories (*)
-                )
+                category:inventory_categories (*)
             `)
             .eq('store_id', storeId)
-            .ilike('global_product.name', `%${query}%`) // Filter by joined column
+            .ilike('name', `%${query}%`)
             .limit(10)
 
         if (error) throw error
@@ -255,10 +185,7 @@ export const ProductService = {
             .eq('id', productId)
             .select(`
                 *,
-                global_product:inventory_global_products (
-                    *,
-                    category:inventory_categories (*)
-                )
+                category:inventory_categories (*)
             `)
             .single()
 
@@ -304,10 +231,7 @@ export const ProductService = {
             .eq('id', productId)
             .select(`
                 *,
-                global_product:inventory_global_products (
-                    *,
-                    category:inventory_categories (*)
-                )
+                category:inventory_categories (*)
             `)
             .single()
 

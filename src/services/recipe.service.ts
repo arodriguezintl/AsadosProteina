@@ -11,12 +11,12 @@ export const RecipeService = {
                     *,
                     product:inventory_products(
                         unit_cost,
-                        global_product:inventory_global_products(name)
+                        name
                     )
                 ),
                 product:inventory_products(
                     sale_price,
-                    global_product:inventory_global_products(name)
+                    name
                 )
             `)
             .eq('is_active', true)
@@ -27,11 +27,11 @@ export const RecipeService = {
         // Transform data to flatten structure
         return data.map((recipe: any) => ({
             ...recipe,
-            product_name: recipe.product?.global_product?.name,
+            product_name: recipe.product?.name,
             product_price: recipe.product?.sale_price,
             ingredients: recipe.ingredients?.map((ing: any) => ({
                 ...ing,
-                product_name: ing.product?.global_product?.name,
+                product_name: ing.product?.name,
                 unit_cost: ing.product?.unit_cost,
                 cost: (ing.quantity * (ing.product?.unit_cost || 0))
             }))
@@ -47,12 +47,12 @@ export const RecipeService = {
                     *,
                     product:inventory_products(
                         unit_cost,
-                        global_product:inventory_global_products(name)
+                        name
                     )
                 ),
                 product:inventory_products(
                     sale_price,
-                    global_product:inventory_global_products(name)
+                    name
                 )
             `)
             .eq('id', id)
@@ -64,11 +64,11 @@ export const RecipeService = {
 
         return {
             ...r,
-            product_name: r.product?.global_product?.name,
+            product_name: r.product?.name,
             product_price: r.product?.sale_price,
             ingredients: r.ingredients?.map((ing: any) => ({
                 ...ing,
-                product_name: ing.product?.global_product?.name,
+                product_name: ing.product?.name,
                 unit_cost: ing.product?.unit_cost,
                 cost: (ing.quantity * (ing.product?.unit_cost || 0))
             }))

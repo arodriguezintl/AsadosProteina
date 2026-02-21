@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/auth.store"
 import { hasModuleAccess } from "@/config/permissions"
-import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, DollarSign, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store } from "lucide-react"
+import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store } from "lucide-react"
 import { Outlet, Link, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
@@ -55,6 +55,8 @@ export function AppLayout() {
     const canViewInventory = hasModuleAccess(role, 'inventory', modules)
     const canViewRecipes = hasModuleAccess(role, 'recipes', modules)
     const canViewFinance = hasModuleAccess(role, 'finance', modules)
+    const canViewTransactions = hasModuleAccess(role, 'transactions', modules)
+    const canViewFinanceCategories = hasModuleAccess(role, 'finance_categories', modules)
     const canViewReports = hasModuleAccess(role, 'reports', modules)
     const canViewCRM = hasModuleAccess(role, 'crm', modules)
     const canViewHR = hasModuleAccess(role, 'hr', modules)
@@ -108,17 +110,13 @@ export function AppLayout() {
                     )}
 
                     {/* Administration Section */}
-                    {(canViewFinance || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores) && (
+                    {(canViewFinance || canViewTransactions || canViewFinanceCategories || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores) && (
                         <>
                             <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6">Administración</div>
-                            {canViewFinance && (
-                                <>
-                                    <NavItem to="/finance" icon={PieChart} label="Finanzas" exact />
-                                    <NavItem to="/finance/transactions" icon={ArrowLeftRight} label="Transacciones" />
-                                    <NavItem to="/finance/expenses" icon={DollarSign} label="Gastos" prefix />
-                                    <NavItem to="/finance/categories" icon={Wallet} label="Categorías Fin." />
-                                </>
-                            )}
+                            {canViewFinance && <NavItem to="/finance" icon={PieChart} label="Finanzas" exact />}
+                            {canViewTransactions && <NavItem to="/finance/transactions" icon={ArrowLeftRight} label="Transacciones" />}
+                            {canViewFinanceCategories && <NavItem to="/finance/categories" icon={Wallet} label="Categorías Fin." />}
+
                             {canViewReports && <NavItem to="/reports" icon={BarChart3} label="Reportes" prefix />}
                             {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix />}
                             {canViewHR && <NavItem to="/hr" icon={UserCog} label="Personal" prefix />}
@@ -129,12 +127,14 @@ export function AppLayout() {
 
                 {/* Footer / User Profile */}
                 <div className="p-4 bg-black/20">
+                    {/* Plan Pro box hidden for next phase
                     <div className="bg-asados-lime/10 p-4 rounded-2xl border border-asados-lime/20 mb-4">
                         <p className="text-xs text-asados-lime font-bold uppercase mb-1">Plan Pro</p>
                         <button className="w-full mt-1 text-xs bg-asados-lime text-asados-dark py-2 rounded-lg font-bold hover:bg-asados-lime/90 transition">
                             MEJORAR
                         </button>
                     </div>
+                    */}
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

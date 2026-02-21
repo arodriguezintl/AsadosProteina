@@ -73,10 +73,9 @@ serve(async (req) => {
             throw new Error('Could not fetch requester profile')
         }
 
-        // Only SUPER_ADMIN can do these actions
-        // Or maybe ADMIN/MANAGER for their own store? (Not implemented here yet)
-        if (requesterProfile.role !== 'super_admin') {
-            throw new Error('Only super_admin can perform admin actions')
+        // Only SUPER_ADMIN and ADMIN can do these actions
+        if (requesterProfile.role !== 'super_admin' && requesterProfile.role !== 'admin') {
+            throw new Error('Only super_admin or admin can perform admin actions')
         }
 
         const { action, user_id, payload }: AdminRequest = await req.json()
