@@ -7,6 +7,8 @@ export interface Customer {
     total_orders: number
     total_spent: number
     loyalty_points: number
+    delivery_sales_count: number
+    pickup_sales_count: number
     is_active: boolean
     created_at: string
     updated_at: string
@@ -23,5 +25,6 @@ export interface CreateCustomerDTO {
 
 export interface UpdateCustomerDTO extends Partial<CreateCustomerDTO> {
     is_active?: boolean
-    loyalty_points?: number
+    delivery_sales_count?: number
+    pickup_sales_count?: number
 }

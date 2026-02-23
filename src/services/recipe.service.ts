@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Recipe, CreateRecipeDTO, CreateRecipeIngredientDTO, RecipeIngredient } from '@/types/recipes'
+import { calculateIngredientCost } from '@/utils/units'
 
 export const RecipeService = {
     async getRecipes() {
@@ -11,11 +12,14 @@ export const RecipeService = {
                     *,
                     product:inventory_products(
                         unit_cost,
+                        unit_of_measure,
                         name
                     )
                 ),
                 product:inventory_products(
                     sale_price,
+                    uber_price,
+                    uber_commission,
                     name
                 )
             `)
@@ -29,11 +33,14 @@ export const RecipeService = {
             ...recipe,
             product_name: recipe.product?.name,
             product_price: recipe.product?.sale_price,
+            product_uber_price: recipe.product?.uber_price,
+            product_uber_commission: recipe.product?.uber_commission,
             ingredients: recipe.ingredients?.map((ing: any) => ({
                 ...ing,
                 product_name: ing.product?.name,
                 unit_cost: ing.product?.unit_cost,
-                cost: (ing.quantity * (ing.product?.unit_cost || 0))
+                inventory_unit: ing.product?.unit_of_measure,
+                cost: calculateIngredientCost(ing.quantity, ing.unit, ing.product?.unit_of_measure || 'pz', ing.product?.unit_cost || 0)
             }))
         })) as Recipe[]
     },
@@ -47,11 +54,14 @@ export const RecipeService = {
                     *,
                     product:inventory_products(
                         unit_cost,
+                        unit_of_measure,
                         name
                     )
                 ),
                 product:inventory_products(
                     sale_price,
+                    uber_price,
+                    uber_commission,
                     name
                 )
             `)
@@ -66,11 +76,14 @@ export const RecipeService = {
             ...r,
             product_name: r.product?.name,
             product_price: r.product?.sale_price,
+            product_uber_price: r.product?.uber_price,
+            product_uber_commission: r.product?.uber_commission,
             ingredients: r.ingredients?.map((ing: any) => ({
                 ...ing,
                 product_name: ing.product?.name,
                 unit_cost: ing.product?.unit_cost,
-                cost: (ing.quantity * (ing.product?.unit_cost || 0))
+                inventory_unit: ing.product?.unit_of_measure,
+                cost: calculateIngredientCost(ing.quantity, ing.unit, ing.product?.unit_of_measure || 'pz', ing.product?.unit_cost || 0)
             }))
         } as Recipe
     },

@@ -121,8 +121,18 @@ export default function RecipeForm() {
 
     const totalCost = recipe?.ingredients?.reduce((acc, curr) => acc + (curr.cost || 0), 0) || 0
     const costPerPortion = recipe?.portions ? (totalCost / recipe.portions) : 0
-    const margin = (recipe?.product_price || 0) - costPerPortion
-    const marginPercent = recipe?.product_price ? (margin / recipe.product_price * 100) : 0
+
+    // Direct Sale
+    const directPrice = recipe?.product_price || 0
+    const directMargin = directPrice - costPerPortion
+    const directMarginPercent = directPrice ? (directMargin / directPrice * 100) : 0
+
+    // Uber Apps
+    const uberPrice = recipe?.product_uber_price || 0
+    const uberCommissionPct = recipe?.product_uber_commission || 0.30
+    const uberNetIncome = uberPrice * (1 - uberCommissionPct)
+    const uberMargin = uberNetIncome - costPerPortion
+    const uberMarginPercent = uberPrice ? (uberMargin / uberPrice * 100) : 0
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
@@ -211,36 +221,66 @@ export default function RecipeForm() {
                                 <CardTitle>Resumen Financiero</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-4 bg-muted/30 p-3 rounded-md">
                                     <div>
                                         <div className="text-xs text-muted-foreground uppercase">Costo Total</div>
                                         <div className="text-lg font-bold">${totalCost.toFixed(2)}</div>
                                     </div>
                                     <div>
-                                        <div className="text-xs text-muted-foreground uppercase">Porción</div>
+                                        <div className="text-xs text-muted-foreground uppercase">Costo x Porción</div>
                                         <div className="text-lg font-bold text-red-600">${costPerPortion.toFixed(2)}</div>
                                     </div>
                                 </div>
 
-                                {recipe?.product_price ? (
-                                    <div className="pt-4 border-t space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">Precio Venta</span>
-                                            <span className="font-semibold text-blue-600">${recipe.product_price.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm font-medium text-green-700">Margen Bruto</span>
-                                            <div className="text-right">
-                                                <div className="font-bold text-green-600">${margin.toFixed(2)}</div>
-                                                <div className="text-xs text-muted-foreground">{marginPercent.toFixed(1)}%</div>
+                                <div className="space-y-3 pt-2">
+                                    {/* Direct Sale */}
+                                    <div className="border rounded-md p-3">
+                                        <div className="font-semibold text-sm mb-2">Venta Directa</div>
+                                        {directPrice ? (
+                                            <div className="space-y-1 text-sm">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Precio Venta</span>
+                                                    <span>${directPrice.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between font-medium">
+                                                    <span className="text-green-700">Utilidad Bruta</span>
+                                                    <div className="text-right">
+                                                        <span className="text-green-600">${directMargin.toFixed(2)}</span>
+                                                        <span className="text-xs text-muted-foreground ml-2">({directMarginPercent.toFixed(1)}%)</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className="text-xs text-amber-600">Sin precio asignado</div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <div className="pt-4 border-t text-xs text-amber-600 font-medium">
-                                        El producto final no tiene precio de venta asignado.
+
+                                    {/* Uber/Apps */}
+                                    <div className="border rounded-md p-3">
+                                        <div className="font-semibold text-sm mb-2">Plataformas (Uber/Didi)</div>
+                                        {uberPrice ? (
+                                            <div className="space-y-1 text-sm">
+                                                <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Precio App</span>
+                                                    <span>${uberPrice.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-muted-foreground text-xs">
+                                                    <span>- Comisión ({(uberCommissionPct * 100).toFixed(0)}%)</span>
+                                                    <span className="text-red-500">-${(uberPrice * uberCommissionPct).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between pt-1 border-t font-medium">
+                                                    <span className="text-green-700">Utilidad Neta</span>
+                                                    <div className="text-right">
+                                                        <span className={uberMargin > 0 ? "text-green-600" : "text-red-600"}>${uberMargin.toFixed(2)}</span>
+                                                        <span className="text-xs text-muted-foreground ml-2">({uberMarginPercent.toFixed(1)}%)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-amber-600">Sin precio de plataforma asignado en inventario.</div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -283,6 +323,24 @@ export default function RecipeForm() {
                                             value={newIngredient.quantity}
                                             onChange={e => setNewIngredient({ ...newIngredient, quantity: parseFloat(e.target.value) })}
                                         />
+                                    </div>
+                                    <div className="grid gap-2 w-24 text-sm">
+                                        <Label>Unidad</Label>
+                                        <Select
+                                            value={newIngredient.unit}
+                                            onValueChange={(val: string) => setNewIngredient({ ...newIngredient, unit: val })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Unidad" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="kg">kg</SelectItem>
+                                                <SelectItem value="g">g (gramo)</SelectItem>
+                                                <SelectItem value="L">L</SelectItem>
+                                                <SelectItem value="ml">ml</SelectItem>
+                                                <SelectItem value="pz">pieza</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <Button onClick={handleAddIngredient} size="icon">
                                         <Plus className="h-4 w-4" />

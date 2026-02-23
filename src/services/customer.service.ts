@@ -76,27 +76,50 @@ export const CustomerService = {
         return data as Customer[]
     },
 
-    async addPoints(customerId: string, points: number) {
-        // First get current points
+    async incrementDeliverySales(customerId: string) {
         const { data: customer, error: getError } = await supabase
             .from('customers')
-            .select('loyalty_points')
+            .select('delivery_sales_count')
             .eq('id', customerId)
             .single()
 
         if (getError) throw getError
 
-        const newBalance = (customer?.loyalty_points || 0) + points
+        const newCount = (customer?.delivery_sales_count || 0) + 1
+        const rewardEarned = newCount % 5 === 0
 
         const { data, error } = await supabase
             .from('customers')
-            .update({ loyalty_points: newBalance })
+            .update({ delivery_sales_count: newCount })
             .eq('id', customerId)
             .select()
             .single()
 
         if (error) throw error
-        return data as Customer
+        return { customer: data as Customer, rewardEarned }
+    },
+
+    async incrementPickupSales(customerId: string) {
+        const { data: customer, error: getError } = await supabase
+            .from('customers')
+            .select('pickup_sales_count')
+            .eq('id', customerId)
+            .single()
+
+        if (getError) throw getError
+
+        const newCount = (customer?.pickup_sales_count || 0) + 1
+        const rewardEarned = newCount % 5 === 0
+
+        const { data, error } = await supabase
+            .from('customers')
+            .update({ pickup_sales_count: newCount })
+            .eq('id', customerId)
+            .select()
+            .single()
+
+        if (error) throw error
+        return { customer: data as Customer, rewardEarned }
     },
 
     async getNewCustomersCount(startDate: string, endDate: string, storeId?: string) {

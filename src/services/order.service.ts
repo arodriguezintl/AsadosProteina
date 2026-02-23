@@ -51,7 +51,22 @@ export const OrderService = {
             console.error('Error updating stock for order:', newOrder.id, stockError)
         }
 
-        return newOrder
+        let rewardName = null;
+        if (order.customer_id) {
+            if (order.order_type === 'delivery') {
+                const result = await CustomerService.incrementDeliverySales(order.customer_id)
+                if (result.rewardEarned) {
+                    rewardName = 'Aplica para Entrega Gratis'
+                }
+            } else if (order.order_type === 'pickup') {
+                const result = await CustomerService.incrementPickupSales(order.customer_id)
+                if (result.rewardEarned) {
+                    rewardName = 'Aplica para Complemento Gratis'
+                }
+            }
+        }
+
+        return { ...newOrder, rewardName }
     },
 
     async getOrders(statusFilter?: OrderStatus | OrderStatus[], limit?: number, storeId?: string) {
@@ -145,21 +160,7 @@ export const OrderService = {
             .eq('id', id)
 
         if (error) throw error
-
-        if (status === 'completed') {
-            const { data: order } = await supabase
-                .from('orders')
-                .select('customer_id, total')
-                .eq('id', id)
-                .single()
-
-            if (order?.customer_id && order?.total) {
-                const points = Math.floor(order.total * 0.1)
-                if (points > 0) {
-                    await CustomerService.addPoints(order.customer_id, points)
-                }
-            }
-        }
+        return null;
     },
 
     async assignDelivery(orderId: string, deliveryPersonId: string) {

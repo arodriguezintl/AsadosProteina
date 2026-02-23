@@ -10,6 +10,7 @@ import FinanceDashboard from '@/pages/finance/FinanceDashboard'
 import TransactionsPage from '@/pages/finance/TransactionsPage'
 import RecipesPage from './pages/recipes/RecipesPage'
 import RecipeForm from './pages/recipes/RecipeForm'
+import RecipeSimulator from './pages/recipes/RecipeSimulator'
 import OrdersPage from '@/pages/orders/OrdersPage'
 import CustomersPage from '@/pages/crm/CustomersPage'
 import CustomerForm from '@/pages/crm/CustomerForm'
@@ -21,6 +22,8 @@ import Login from '@/pages/Login'
 import { useAuthStore } from '@/store/auth.store'
 import { useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore()
@@ -89,13 +92,15 @@ function App() {
           <Route path="/finance" element={<FinanceDashboard />} />
 
           <Route path="/recipes" element={<RecipesPage />} />
+          <Route path="/recipes/simulator" element={<RecipeSimulator />} />
           <Route path="/recipes/new" element={<RecipeForm />} />
           <Route path="/recipes/:id" element={<RecipeForm />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/stores" element={<StoresPage />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+      <ToastContainer position="top-right" autoClose={5000} />
+    </BrowserRouter >
   )
 }
 

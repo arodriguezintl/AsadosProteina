@@ -23,6 +23,8 @@ export interface Product {
     sale_price?: number
     is_active: boolean
     image_url?: string
+    uber_price?: number
+    uber_commission?: number
     created_at: string
     updated_at: string
 
@@ -42,6 +44,8 @@ export interface CreateProductDTO {
     sale_price?: number
     is_active?: boolean
     image_url?: string
+    uber_price?: number
+    uber_commission?: number
 }
 
 export interface UpdateProductDTO extends Partial<Omit<CreateProductDTO, 'store_id'>> { }

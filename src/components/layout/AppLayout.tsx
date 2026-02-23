@@ -105,7 +105,12 @@ export function AppLayout() {
                                     <NavItem to="/inventory/categories" icon={Settings} label="Categorías" />
                                 </>
                             )}
-                            {canViewRecipes && <NavItem to="/recipes" icon={ChefHat} label="Recetas" prefix />}
+                            {canViewRecipes && (
+                                <>
+                                    <NavItem to="/recipes" icon={ChefHat} label="Recetas" exact />
+                                    <NavItem to="/recipes/simulator" icon={Calculator} label="Simulador" />
+                                </>
+                            )}
                         </>
                     )}
 

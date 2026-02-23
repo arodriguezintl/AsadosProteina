@@ -15,6 +15,8 @@ export interface Recipe {
     ingredients?: RecipeIngredient[]
     product_name?: string // From join
     product_price?: number // From join
+    product_uber_price?: number
+    product_uber_commission?: number
 }
 
 export interface RecipeIngredient {
@@ -28,6 +30,7 @@ export interface RecipeIngredient {
     product_name?: string
     unit_cost?: number
     cost?: number // calculated
+    inventory_unit?: string // joined
 }
 
 export interface CreateRecipeDTO {
