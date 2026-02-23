@@ -1,9 +1,11 @@
 -- =====================================================================
--- FIX: Create public.inventory_global_products and update inventory
--- 
--- Root cause: The code queries inventory_products → inventory_global_products
--- → inventory_categories but public.inventory_global_products did not exist.
--- public.inventory_categories had no PRIMARY KEY constraint either.
+-- FIX: inventory_products.category_id was missing FK to inventory_categories
+--
+-- Root cause: public.inventory_products has a category_id column but no FK
+-- constraint pointing to public.inventory_categories. PostgREST requires an
+-- explicit FK to resolve joins, so the query
+--   inventory_products?select=*,category:inventory_categories(*)
+-- was failing with PGRST200 (no relationship found in schema cache).
 -- =====================================================================
 
 -- STEP 1: Add missing PRIMARY KEY to public.inventory_categories
