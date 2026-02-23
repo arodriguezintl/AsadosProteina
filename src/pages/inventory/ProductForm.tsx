@@ -18,7 +18,6 @@ interface ProductFormData extends Record<string, unknown> {
     description: string
     category_id: string
     unit_of_measure: string
-    image_url: string
     min_stock: number
     unit_cost: number
     sale_price: number
@@ -79,7 +78,6 @@ export default function ProductForm() {
                 setValue('sku', product.sku)
                 setValue('category_id', product.category_id || '')
                 setValue('unit_of_measure', product.unit_of_measure)
-                setValue('image_url', product.image_url || '')
                 setValue('description', product.description || '')
                 setValue('min_stock', product.min_stock)
                 setValue('current_stock', product.current_stock)
@@ -109,7 +107,6 @@ export default function ProductForm() {
                     description: data.description,
                     category_id: data.category_id,
                     unit_of_measure: data.unit_of_measure,
-                    image_url: data.image_url,
                     min_stock: data.min_stock,
                     unit_cost: data.unit_cost,
                     sale_price: data.sale_price,
@@ -124,7 +121,6 @@ export default function ProductForm() {
                     description: data.description,
                     category_id: data.category_id,
                     unit_of_measure: data.unit_of_measure,
-                    image_url: data.image_url,
                     min_stock: data.min_stock,
                     unit_cost: data.unit_cost,
                     sale_price: data.sale_price,
@@ -234,10 +230,6 @@ export default function ProductForm() {
                                             <SelectItem value="ml">Mililitro (ml)</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="image_url">Imagen URL</Label>
-                                    <Input id="image_url" {...register('image_url')} placeholder="https://..." />
                                 </div>
                             </div>
                         </div>

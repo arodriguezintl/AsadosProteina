@@ -9,23 +9,7 @@ import { DndContext, useDraggable, useDroppable, closestCorners, useSensor, useS
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 
-import { RefreshCw, Bike, CheckCircle, Clock, ShoppingBag } from 'lucide-react'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogFooter
-} from "@/components/ui/dialog"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { EmployeeService, type Employee } from '@/services/employee.service'
+import { RefreshCw, CheckCircle, Clock, ShoppingBag } from 'lucide-react'
 
 function DroppableColumn({ id, title, icon: Icon, color, children, count }: any) {
     const { isOver, setNodeRef } = useDroppable({ id });
@@ -102,9 +86,6 @@ function OrderCardDisplay({ order, actionButtons = null, isOverlay = false }: an
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([])
     const [loading, setLoading] = useState(true)
-    const [drivers, setDrivers] = useState<Employee[]>([])
-    const [selectedDriver, setSelectedDriver] = useState<string>('')
-    const [assigningOrder, setAssigningOrder] = useState<string | null>(null)
     const [activeId, setActiveId] = useState<string | null>(null)
 
     const { storeId } = useAuthStore()
@@ -120,7 +101,6 @@ export default function OrdersPage() {
     useEffect(() => {
         if (storeId) {
             loadOrders()
-            loadDrivers()
         }
 
         const interval = setInterval(() => {
@@ -128,15 +108,6 @@ export default function OrdersPage() {
         }, 30000)
         return () => clearInterval(interval)
     }, [storeId])
-
-    const loadDrivers = async () => {
-        try {
-            const data = await EmployeeService.getDeliveryDrivers()
-            setDrivers(data)
-        } catch (error) {
-            console.error('Error loading drivers:', error)
-        }
-    }
 
     const loadOrders = async () => {
         if (!storeId) return
@@ -162,20 +133,6 @@ export default function OrdersPage() {
         }
     }
 
-    const handleAssignDriver = async () => {
-        if (!assigningOrder || !selectedDriver) return
-        try {
-            await OrderService.assignDelivery(assigningOrder, selectedDriver)
-            await OrderService.updateStatus(assigningOrder, 'in_delivery')
-            setAssigningOrder(null)
-            setSelectedDriver('')
-            loadOrders()
-        } catch (error) {
-            console.error('Error assigning driver:', error)
-            alert('Error al asignar repartidor')
-        }
-    }
-
     const handleDragStart = (event: DragStartEvent) => {
         setActiveId(event.active.id as string);
     };
@@ -191,16 +148,6 @@ export default function OrdersPage() {
         const order = orders.find(o => o.id === orderId);
         if (!order || order.status === newStatus) return;
 
-        if (newStatus === 'completed') {
-            handleStatusUpdate(orderId, newStatus);
-            return;
-        }
-
-        if (newStatus === 'in_delivery' && order.order_type === 'delivery') {
-            setAssigningOrder(orderId);
-            return;
-        }
-
         handleStatusUpdate(orderId, newStatus);
     };
 
@@ -208,7 +155,6 @@ export default function OrdersPage() {
         { status: 'pending', label: 'Pendiente', icon: Clock, color: 'bg-yellow-100/80 text-yellow-800' },
         { status: 'preparing', label: 'En Preparación', icon: ShoppingBag, color: 'bg-blue-100/80 text-blue-800' },
         { status: 'ready', label: 'Listo', icon: CheckCircle, color: 'bg-green-100/80 text-green-800' },
-        { status: 'in_delivery', label: 'En Reparto', icon: Bike, color: 'bg-orange-100/80 text-orange-800' },
     ]
 
     const getOrdersByStatus = (status: OrderStatus) => {
@@ -229,45 +175,8 @@ export default function OrdersPage() {
                     Terminar
                 </Button>
             )}
-            {status === 'ready' && order.order_type === 'delivery' && (
-                <Dialog open={assigningOrder === order.id} onOpenChange={(open: boolean) => !open && setAssigningOrder(null)}>
-                    <DialogTrigger asChild>
-                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700" onPointerDown={e => e.stopPropagation()} onClick={() => setAssigningOrder(order.id)}>
-                            Asignar Repartidor
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Asignar Repartidor</DialogTitle>
-                        </DialogHeader>
-                        <div className="py-4">
-                            <Select onValueChange={setSelectedDriver} value={selectedDriver}>
-                                <SelectTrigger onPointerDown={e => e.stopPropagation()}>
-                                    <SelectValue placeholder="Seleccionar repartidor" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {drivers.map(driver => (
-                                        <SelectItem key={driver.id} value={driver.id}>
-                                            {driver.first_name} {driver.last_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onPointerDown={e => e.stopPropagation()} onClick={() => setAssigningOrder(null)}>Cancelar</Button>
-                            <Button onPointerDown={e => e.stopPropagation()} onClick={handleAssignDriver} disabled={!selectedDriver}>Asignar e Iniciar Reparto</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            )}
-            {status === 'ready' && order.order_type === 'pickup' && (
-                <Button size="sm" onPointerDown={e => e.stopPropagation()} onClick={() => handleStatusUpdate(order.id, 'completed')}>
-                    Entregado
-                </Button>
-            )}
-            {status === 'in_delivery' && (
-                <Button size="sm" onPointerDown={e => e.stopPropagation()} onClick={() => handleStatusUpdate(order.id, 'completed')}>
+            {status === 'ready' && (
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onPointerDown={e => e.stopPropagation()} onClick={() => handleStatusUpdate(order.id, 'completed')}>
                     Completado
                 </Button>
             )}

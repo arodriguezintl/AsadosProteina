@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon } from 'lucide-react'
+import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
+import { exportToExcel, exportToPDF } from '@/utils/export'
 
 import { useAuthStore } from '@/store/auth.store'
 
@@ -208,11 +209,37 @@ export default function ReportsPage() {
                     {/* Stores Comparison Table (Super Admin Only) */}
                     {isSuperAdmin && selectedStoreId === 'all' && storeComparison.length > 0 && (
                         <Card>
-                            <CardHeader>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="flex items-center gap-2">
                                     <StoreIcon className="h-5 w-5" />
                                     Ventas por Tienda
                                 </CardTitle>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        className="h-12 w-12 rounded-xl border-green-200 bg-white shadow-sm hover:bg-green-50 hover:border-green-300 transition-all p-0 flex items-center justify-center"
+                                        title="Exportar a Excel"
+                                        onClick={() => exportToExcel(
+                                            storeComparison.map(s => ({ Tienda: s.name, Pedidos: s.totalOrders, "Ventas Totales": s.totalSales, "Ticket Promedio": s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0 })),
+                                            `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
+                                        )}
+                                    >
+                                        <FileSpreadsheet className="w-6 h-6 text-green-500" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
+                                        title="Exportar a PDF"
+                                        onClick={() => exportToPDF(
+                                            'Ventas por Tienda',
+                                            ['Tienda', 'Pedidos', 'Ventas Totales ($)', 'Ticket Promedio ($)'],
+                                            storeComparison.map(s => [s.name, s.totalOrders, s.totalSales.toFixed(2), (s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0).toFixed(2)]),
+                                            `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
+                                        )}
+                                    >
+                                        <FileText className="w-6 h-6 text-red-500" />
+                                    </Button>
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -244,8 +271,36 @@ export default function ReportsPage() {
                         <div className="grid gap-4 md:grid-cols-2">
                             {/* Top Products */}
                             <Card className="col-span-1">
-                                <CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle>Productos Más Vendidos</CardTitle>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="h-12 w-12 rounded-xl border-green-200 bg-white shadow-sm hover:bg-green-50 hover:border-green-300 transition-all p-0 flex items-center justify-center"
+                                            disabled={topProducts.length === 0}
+                                            title="Exportar a Excel"
+                                            onClick={() => exportToExcel(
+                                                topProducts.map(p => ({ Producto: p.name, Cantidad: p.quantity, "Total Venta": p.revenue })),
+                                                `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
+                                            )}
+                                        >
+                                            <FileSpreadsheet className="w-6 h-6 text-green-500" />
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
+                                            disabled={topProducts.length === 0}
+                                            title="Exportar a PDF"
+                                            onClick={() => exportToPDF(
+                                                'Reporte de Ventas por Producto',
+                                                ['Producto', 'Cantidad', 'Venta Total ($)'],
+                                                topProducts.map(p => [p.name, p.quantity, p.revenue.toFixed(2)]),
+                                                `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
+                                            )}
+                                        >
+                                            <FileText className="w-6 h-6 text-red-500" />
+                                        </Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent>
                                     {topProducts.length === 0 ? (

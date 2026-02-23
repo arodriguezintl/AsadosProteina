@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Users, DollarSign, Search, Edit, Calendar, UserCheck, UserX } from 'lucide-react'
+import { Loader2, Plus, Users, DollarSign, Search, Edit, Calendar, UserCheck, UserX, FileSpreadsheet, FileText } from 'lucide-react'
 import { HRService } from '@/services/hr.service'
 import { UserService } from '@/services/user.service'
 import { useAuthStore } from '@/store/auth.store'
@@ -15,6 +15,7 @@ import type { Employee, Payroll } from '@/types/hr'
 import type { UserRole } from '@/types/database.types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { exportToExcel, exportToPDF } from '@/utils/export'
 
 interface EmployeeWithShift extends Employee {
     activeShift?: any
@@ -676,63 +677,106 @@ export default function HRPage() {
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Nóminas Generadas</h3>
-                <Dialog open={isPayrollDialogOpen} onOpenChange={setIsPayrollDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> Generar Nómina
+                <div className="flex items-center gap-2">
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            className="h-12 w-12 rounded-xl border-green-200 bg-white shadow-sm hover:bg-green-50 hover:border-green-300 transition-all p-0 flex items-center justify-center"
+                            disabled={payrolls.length === 0}
+                            title="Exportar a Excel"
+                            onClick={() => exportToExcel(
+                                payrolls.map(p => ({
+                                    Periodo: `${format(new Date(p.period_start), 'dd MMM', { locale: es })} - ${format(new Date(p.period_end), 'dd MMM yyyy', { locale: es })}`,
+                                    Empleado: p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : 'N/A',
+                                    Horas: p.total_hours?.toFixed(2) || '0.00',
+                                    "Total Pagado": p.total_paid?.toFixed(2) || '0.00',
+                                    Estado: p.status === 'paid' ? 'Pagado' : 'Borrador'
+                                })),
+                                'Reporte_De_Nomina'
+                            )}
+                        >
+                            <FileSpreadsheet className="w-6 h-6 text-green-500" />
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Generar Nómina</DialogTitle>
-                            <DialogDescription>Selecciona el empleado y el periodo de pago.</DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleGeneratePayroll} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Empleado</Label>
-                                <Select
-                                    value={payrollFormData.employee_id}
-                                    onValueChange={v => setPayrollFormData({ ...payrollFormData, employee_id: v })}
-                                >
-                                    <SelectTrigger><SelectValue placeholder="Seleccionar empleado" /></SelectTrigger>
-                                    <SelectContent>
-                                        {employees.filter(e => e.is_active).map(emp => (
-                                            <SelectItem key={emp.id} value={emp.id}>
-                                                {emp.first_name} {emp.last_name} - {emp.position}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                        <Button
+                            variant="outline"
+                            className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
+                            disabled={payrolls.length === 0}
+                            title="Exportar a PDF"
+                            onClick={() => exportToPDF(
+                                'Reporte de Nómina',
+                                ['Periodos', 'Empleado', 'Horas', 'Total Pagado ($)', 'Estado'],
+                                payrolls.map(p => [
+                                    `${format(new Date(p.period_start), 'dd MMM', { locale: es })} - ${format(new Date(p.period_end), 'dd MMM yyyy', { locale: es })}`,
+                                    p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : 'N/A',
+                                    p.total_hours?.toFixed(2) || '0.00',
+                                    p.total_paid?.toFixed(2) || '0.00',
+                                    p.status === 'paid' ? 'Pagado' : 'Borrador'
+                                ]),
+                                'Reporte_De_Nomina'
+                            )}
+                        >
+                            <FileText className="w-6 h-6 text-red-500" />
+                        </Button>
+                    </div>
+
+                    <Dialog open={isPayrollDialogOpen} onOpenChange={setIsPayrollDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" /> Generar Nómina
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Generar Nómina</DialogTitle>
+                                <DialogDescription>Selecciona el empleado y el periodo de pago.</DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleGeneratePayroll} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label>Fecha Inicio</Label>
-                                    <Input
-                                        type="date"
-                                        required
-                                        value={payrollFormData.period_start}
-                                        onChange={e => setPayrollFormData({ ...payrollFormData, period_start: e.target.value })}
-                                    />
+                                    <Label>Empleado</Label>
+                                    <Select
+                                        value={payrollFormData.employee_id}
+                                        onValueChange={v => setPayrollFormData({ ...payrollFormData, employee_id: v })}
+                                    >
+                                        <SelectTrigger><SelectValue placeholder="Seleccionar empleado" /></SelectTrigger>
+                                        <SelectContent>
+                                            {employees.filter(e => e.is_active).map(emp => (
+                                                <SelectItem key={emp.id} value={emp.id}>
+                                                    {emp.first_name} {emp.last_name} - {emp.position}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Fecha Fin</Label>
-                                    <Input
-                                        type="date"
-                                        required
-                                        value={payrollFormData.period_end}
-                                        onChange={e => setPayrollFormData({ ...payrollFormData, period_end: e.target.value })}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Fecha Inicio</Label>
+                                        <Input
+                                            type="date"
+                                            required
+                                            value={payrollFormData.period_start}
+                                            onChange={e => setPayrollFormData({ ...payrollFormData, period_start: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Fecha Fin</Label>
+                                        <Input
+                                            type="date"
+                                            required
+                                            value={payrollFormData.period_end}
+                                            onChange={e => setPayrollFormData({ ...payrollFormData, period_end: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                            <DialogFooter>
-                                <Button type="submit" disabled={loading}>
-                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                    Generar
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                                <DialogFooter>
+                                    <Button type="submit" disabled={loading}>
+                                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Generar
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
             <Card>
                 <CardContent className="p-0">
