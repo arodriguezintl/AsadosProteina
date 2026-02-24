@@ -6,7 +6,7 @@ import type { Category, CreateProductDTO, Product } from '@/types/inventory'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft, ImagePlus, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/store/auth.store'
@@ -37,6 +37,8 @@ export default function ProductForm() {
 
     // If editing, we load the product
     const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+    const [imageFile, setImageFile] = useState<File | null>(null)
+    const [imagePreview, setImagePreview] = useState<string | null>(null)
 
     const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ProductFormData>({
         defaultValues: {
@@ -86,6 +88,7 @@ export default function ProductForm() {
                 setValue('unit_cost', product.unit_cost)
                 setValue('sale_price', product.sale_price || 0)
                 setValue('is_taxable', product.is_taxable || false)
+                setImagePreview(product.image_url || null)
             }
         } catch (error) {
             console.error('Error loading product:', error)
@@ -102,6 +105,11 @@ export default function ProductForm() {
 
         setLoading(true)
         try {
+            let imageUrl = editingProduct?.image_url
+            if (imageFile) {
+                imageUrl = await ProductService.uploadImage(imageFile)
+            }
+
             if (id) {
                 // Update existing Store Product
                 await ProductService.updateProduct(id, {
@@ -115,6 +123,7 @@ export default function ProductForm() {
                     sale_price: data.sale_price,
                     current_stock: data.current_stock,
                     is_taxable: data.is_taxable,
+                    image_url: imageUrl,
                 })
             } else {
                 // Create New
@@ -130,7 +139,8 @@ export default function ProductForm() {
                     sale_price: data.sale_price,
                     current_stock: data.current_stock,
                     is_taxable: data.is_taxable,
-                    is_active: true
+                    is_active: true,
+                    image_url: imageUrl,
                 }
 
                 await ProductService.createProduct(createDTO)
@@ -177,6 +187,49 @@ export default function ProductForm() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
+                        {/* SECTION: IMAGE UPLOAD */}
+                        <div className="space-y-4 p-4 bg-muted/20 rounded-lg border">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Badge variant="outline">Media</Badge>
+                                Fotografía del Producto
+                            </h3>
+                            <div className="flex flex-col items-center gap-4">
+                                {imagePreview ? (
+                                    <div className="relative w-40 h-40 rounded-lg border bg-white overflow-hidden group">
+                                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Button type="button" variant="destructive" size="sm" onClick={() => {
+                                                setImageFile(null)
+                                                setImagePreview(null)
+                                            }}>
+                                                <X className="h-4 w-4 mr-2" />
+                                                Quitar
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Label htmlFor="image_upload" className="flex flex-col items-center justify-center w-full max-w-sm h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 p-4 text-center transition-colors">
+                                        <ImagePlus className="h-8 w-8 text-muted-foreground mb-2" />
+                                        <span className="text-sm font-medium">Subir imagen</span>
+                                        <span className="text-xs text-muted-foreground mt-1">PNG, JPG hasta 5MB</span>
+                                        <Input
+                                            id="image_upload"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    const file = e.target.files[0]
+                                                    setImageFile(file)
+                                                    setImagePreview(URL.createObjectURL(file))
+                                                }
+                                            }}
+                                        />
+                                    </Label>
+                                )}
+                            </div>
+                        </div>
 
                         {/* SECTION: GLOBAL DETAILS */}
                         <div className="space-y-4 p-4 bg-muted/20 rounded-lg border">

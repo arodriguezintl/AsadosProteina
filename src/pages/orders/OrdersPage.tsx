@@ -14,13 +14,13 @@ import { RefreshCw, CheckCircle, Clock, ShoppingBag } from 'lucide-react'
 function DroppableColumn({ id, title, icon: Icon, color, children, count }: any) {
     const { isOver, setNodeRef } = useDroppable({ id });
     return (
-        <div ref={setNodeRef} className={`flex-1 min-w-[320px] max-w-[400px] flex flex-col gap-3 transition-colors rounded-xl p-3 bg-gray-50/50 border border-transparent ${isOver ? 'ring-2 ring-primary bg-primary/5 border-primary/20' : ''}`}>
+        <div ref={setNodeRef} className={`flex-1 min-w-[320px] max-w-[400px] max-h-full flex flex-col gap-3 transition-colors rounded-xl p-3 bg-gray-50/50 border border-transparent ${isOver ? 'ring-2 ring-primary bg-primary/5 border-primary/20' : ''}`}>
             <div className={`flex items-center gap-2 p-3 rounded-lg font-bold shadow-sm ${color}`}>
                 <Icon className="h-5 w-5" />
                 {title}
                 <Badge variant="secondary" className="ml-auto bg-white/60 text-current">{count}</Badge>
             </div>
-            <div className="flex flex-col gap-3 flex-1 min-h-[150px] p-1 rounded-md">
+            <div className="flex flex-col gap-3 flex-1 min-h-[150px] overflow-y-auto p-1 rounded-md">
                 {children}
             </div>
         </div>

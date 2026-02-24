@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import { toast } from 'react-toastify'
 import { ProductService } from '@/services/product.service'
 import { OrderService } from '@/services/order.service'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Product } from '@/types/inventory'
 import type { CreateOrderDTO, CreateOrderItemDTO } from '@/types/sales'
 import type { Customer } from '@/types/customers'
@@ -36,6 +38,8 @@ export default function POS() {
     const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup')
     const [showTicketDialog, setShowTicketDialog] = useState(false)
     const [lastTicket, setLastTicket] = useState<TicketData | null>(null)
+    const [showPromoDialog, setShowPromoDialog] = useState(false)
+    const [promoExtraItem, setPromoExtraItem] = useState<string>('')
     const { user, storeId } = useAuthStore()
     const { buildTicketData } = useTicketPrint()
 
@@ -104,18 +108,45 @@ export default function POS() {
 
     const handleCheckout = async () => {
         if (cart.length === 0 || !storeId) return
+
+        if (selectedCustomer) {
+            let qualifies = false
+            if (orderType === 'delivery') {
+                qualifies = ((selectedCustomer.delivery_sales_count || 0) + 1) % 5 === 0
+            } else {
+                qualifies = ((selectedCustomer.pickup_sales_count || 0) + 1) % 5 === 0
+            }
+            if (qualifies) {
+                setShowPromoDialog(true)
+                return
+            }
+        }
+        processCheckout(false)
+    }
+
+    const processCheckout = async (withPromo = false) => {
+        if (!storeId) return
         setIsCheckingOut(true)
 
         try {
+            const finalCart = [...cart]
+            if (withPromo && promoExtraItem) {
+                const productToAdd = products.find(p => p.id === promoExtraItem)
+                if (productToAdd) {
+                    finalCart.push({
+                        product: { ...productToAdd, sale_price: 0 },
+                        quantity: 1
+                    })
+                }
+            }
+
             let total = 0
             let tax = 0
             let subtotal = 0
 
-            cart.forEach(item => {
+            finalCart.forEach(item => {
                 const itemTotal = (item.product.sale_price || 0) * item.quantity
                 if (item.product.is_taxable) {
-                    // Item price INCLUDES 16% VAT
-                    // Price = Subtotal * 1.16 => Subtotal = Price / 1.16
                     const itemSubtotal = itemTotal / 1.16
                     const itemTax = itemTotal - itemSubtotal
                     subtotal += itemSubtotal
@@ -133,9 +164,9 @@ export default function POS() {
                 store_id: storeId,
                 order_number: orderNumber,
                 customer_id: selectedCustomer?.id,
-                order_type: orderType, // Use the selected order type
-                status: 'pending', // Change to pending so it starts in the workflow
-                payment_method: 'cash', // Hardcoded for now
+                order_type: orderType,
+                status: 'pending',
+                payment_method: 'cash',
                 payment_status: 'paid',
                 subtotal: subtotal,
                 total: total,
@@ -143,7 +174,7 @@ export default function POS() {
                 discount: 0
             }
 
-            const itemsData: CreateOrderItemDTO[] = cart.map(item => ({
+            const itemsData: CreateOrderItemDTO[] = finalCart.map(item => ({
                 product_id: item.product.id,
                 quantity: item.quantity,
                 unit_price: item.product.sale_price || 0,
@@ -152,18 +183,14 @@ export default function POS() {
 
             const result = await OrderService.createOrder(orderData, itemsData, user?.id || '')
 
-            // Removed points addition
-
-            // Show loyalty reward toast if applicable
             if (result && result.rewardName) {
-                toast.success(`¡Recompensa Desbloqueada!\nEl cliente ha ganado: ${result.rewardName}`, {
+                toast.success(`¡Recompensa Consumida!\nEl cliente usó: ${result.rewardName}`, {
                     position: "top-center",
                     autoClose: 5000,
                 })
             }
 
-            // Build and show ticket
-            const ticketData = buildTicketData(orderNumber, cart, tax, selectedCustomer, orderType)
+            const ticketData = buildTicketData(orderNumber, finalCart, tax, selectedCustomer, orderType)
             setLastTicket(ticketData)
             setShowTicketDialog(true)
             setCart([])
@@ -381,6 +408,45 @@ export default function POS() {
                 onClose={() => setShowTicketDialog(false)}
                 ticket={lastTicket}
             />
+
+            {/* Promo Interception Dialog */}
+            <Dialog open={showPromoDialog} onOpenChange={setShowPromoDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>¡Cliente Califica para Promoción!</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                            El cliente ha acumulado suficientes beneficios para una recompensa (Extra / Complemento).
+                            Seleccione el producto a otorgar o déjelo en blanco para omitir.
+                        </p>
+                        <Select value={promoExtraItem} onValueChange={setPromoExtraItem}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Buscar en menú..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {products.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            setShowPromoDialog(false)
+                            setPromoExtraItem('')
+                            processCheckout(false)
+                        }}>Omitir Promoción</Button>
+                        <Button disabled={!promoExtraItem || isCheckingOut} onClick={() => {
+                            setShowPromoDialog(false)
+                            processCheckout(true)
+                        }}>
+                            {isCheckingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Agregar Extra y Cobrar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     )
 }
