@@ -49,6 +49,7 @@ export default function CustomerForm() {
                 setValue('full_name', customer.full_name)
                 setValue('email', customer.email)
                 setValue('phone', customer.phone)
+                setValue('address', customer.address)
             }
         } catch (error) {
             console.error('Error loading customer:', error)
@@ -108,6 +109,11 @@ export default function CustomerForm() {
                         <div className="grid gap-2">
                             <Label htmlFor="phone">Teléfono / Celular</Label>
                             <Input type="tel" id="phone" {...register('phone')} placeholder="+52 ..." />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="address">Domicilio / Dirección</Label>
+                            <Input id="address" {...register('address')} placeholder="Calle 123, Colonia..." />
                         </div>
 
                         <Button type="submit" className="w-full" disabled={loading}>

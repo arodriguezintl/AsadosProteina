@@ -22,6 +22,7 @@ interface ProductFormData extends Record<string, unknown> {
     unit_cost: number
     sale_price: number
     current_stock: number
+    is_taxable: boolean
 }
 
 export default function ProductForm() {
@@ -43,7 +44,8 @@ export default function ProductForm() {
             unit_cost: 0,
             sale_price: 0,
             current_stock: 0,
-            unit_of_measure: 'pza'
+            unit_of_measure: 'pza',
+            is_taxable: false
         }
     })
 
@@ -83,6 +85,7 @@ export default function ProductForm() {
                 setValue('current_stock', product.current_stock)
                 setValue('unit_cost', product.unit_cost)
                 setValue('sale_price', product.sale_price || 0)
+                setValue('is_taxable', product.is_taxable || false)
             }
         } catch (error) {
             console.error('Error loading product:', error)
@@ -111,6 +114,7 @@ export default function ProductForm() {
                     unit_cost: data.unit_cost,
                     sale_price: data.sale_price,
                     current_stock: data.current_stock,
+                    is_taxable: data.is_taxable,
                 })
             } else {
                 // Create New
@@ -125,6 +129,7 @@ export default function ProductForm() {
                     unit_cost: data.unit_cost,
                     sale_price: data.sale_price,
                     current_stock: data.current_stock,
+                    is_taxable: data.is_taxable,
                     is_active: true
                 }
 
@@ -264,6 +269,18 @@ export default function ProductForm() {
                                     <Input type="number" step="0.01" id="sale_price" {...register('sale_price', { valueAsNumber: true })} />
                                     <p className="text-[10px] text-muted-foreground">Dejar en 0 si es solo insumo</p>
                                 </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2 pt-4">
+                                <input
+                                    type="checkbox"
+                                    id="is_taxable"
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                    {...register('is_taxable')}
+                                />
+                                <Label htmlFor="is_taxable" className="font-normal cursor-pointer">
+                                    Desglosar IVA en ticket (Ej: bebidas, no alimentos)
+                                </Label>
                             </div>
                         </div>
 

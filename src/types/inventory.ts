@@ -21,6 +21,7 @@ export interface Product {
     current_stock: number
     unit_cost: number
     sale_price?: number
+    is_taxable?: boolean
     is_active: boolean
     image_url?: string
     uber_price?: number
@@ -42,6 +43,7 @@ export interface CreateProductDTO {
     current_stock?: number
     unit_cost: number
     sale_price?: number
+    is_taxable?: boolean
     is_active?: boolean
     image_url?: string
     uber_price?: number

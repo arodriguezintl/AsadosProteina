@@ -62,6 +62,7 @@ export function AppLayout() {
     const canViewHR = hasModuleAccess(role, 'hr', modules)
     const canViewUsers = hasModuleAccess(role, 'users', modules)
     const canViewStores = hasModuleAccess(role, 'stores', modules)
+    const canViewPromotions = hasModuleAccess(role, 'promotions', modules)
 
     return (
         <div className="flex min-h-screen bg-[#F4F7F2]">
@@ -115,7 +116,7 @@ export function AppLayout() {
                     )}
 
                     {/* Administration Section */}
-                    {(canViewFinance || canViewTransactions || canViewFinanceCategories || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores) && (
+                    {(canViewFinance || canViewTransactions || canViewFinanceCategories || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores || canViewPromotions) && (
                         <>
                             <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6">Administración</div>
                             {canViewFinance && <NavItem to="/finance" icon={PieChart} label="Finanzas" exact />}
@@ -124,6 +125,7 @@ export function AppLayout() {
 
                             {canViewReports && <NavItem to="/reports" icon={BarChart3} label="Reportes" prefix />}
                             {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix />}
+                            {canViewPromotions && <NavItem to="/admin/promotions" icon={PieChart} label="Promociones" prefix />}
                             {canViewHR && <NavItem to="/hr" icon={UserCog} label="Personal" prefix />}
                             {canViewStores && <NavItem to="/admin/stores" icon={Store} label="Tiendas" />}
                         </>

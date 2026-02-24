@@ -34,8 +34,8 @@ export function useTicketPrint() {
             lineTotal: (item.product.sale_price ?? 0) * item.quantity,
         }))
 
-        const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0)
-        const total = subtotal + tax
+        const total = cart.reduce((sum, item) => sum + ((item.product.sale_price ?? 0) * item.quantity), 0)
+        const subtotal = total - tax
 
         return {
             businessName: BUSINESS_NAME,

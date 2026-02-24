@@ -18,6 +18,8 @@ import ReportsPage from '@/pages/reports/ReportsPage'
 import HRPage from '@/pages/hr/HRPage'
 import UsersPage from '@/pages/admin/UsersPage'
 import StoresPage from '@/pages/admin/StoresPage'
+import PromotionsPage from '@/pages/admin/PromotionsPage'
+import PromotionForm from '@/pages/admin/PromotionForm'
 import Login from '@/pages/Login'
 import { useAuthStore } from '@/store/auth.store'
 import { useEffect } from 'react'
@@ -95,6 +97,9 @@ function App() {
           <Route path="/recipes/simulator" element={<RecipeSimulator />} />
           <Route path="/recipes/new" element={<RecipeForm />} />
           <Route path="/recipes/:id" element={<RecipeForm />} />
+          <Route path="/admin/promotions" element={<PromotionsPage />} />
+          <Route path="/admin/promotions/new" element={<PromotionForm />} />
+          <Route path="/admin/promotions/:id" element={<PromotionForm />} />
           <Route path="/admin/users" element={<UsersPage />} />
           <Route path="/admin/stores" element={<StoresPage />} />
         </Route>

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText } from 'lucide-react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { exportToExcel, exportToPDF } from '@/utils/export'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { useAuthStore } from '@/store/auth.store'
 
@@ -331,10 +332,24 @@ export default function ReportsPage() {
                             {/* Recent Activity or Chart Placeholder */}
                             <Card className="col-span-1">
                                 <CardHeader>
-                                    <CardTitle>Resumen por Categoría</CardTitle>
+                                    <CardTitle>Resumen por Producto</CardTitle>
                                 </CardHeader>
                                 <CardContent className="h-[300px] flex items-center justify-center border-dashed border-2 rounded-md bg-muted/20">
-                                    <p className="text-muted-foreground">Gráfico de pastel próximamente...</p>
+                                    {topProducts.length === 0 ? (
+                                        <p className="text-muted-foreground">Sin datos suficientes</p>
+                                    ) : (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={topProducts} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                                                <Tooltip
+                                                    formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Venta Total']}
+                                                    labelFormatter={(label) => `Producto: ${label}`}
+                                                />
+                                                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>

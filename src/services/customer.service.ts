@@ -64,7 +64,7 @@ export const CustomerService = {
         let dbQuery = supabase
             .from('customers')
             .select('*')
-            .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%`)
+            .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%,email.ilike.%${query}%,address.ilike.%${query}%`)
 
         if (storeId) {
             dbQuery = dbQuery.eq('store_id', storeId)

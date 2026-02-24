@@ -107,7 +107,26 @@ export default function POS() {
         setIsCheckingOut(true)
 
         try {
-            const subtotal = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
+            let total = 0
+            let tax = 0
+            let subtotal = 0
+
+            cart.forEach(item => {
+                const itemTotal = (item.product.sale_price || 0) * item.quantity
+                if (item.product.is_taxable) {
+                    // Item price INCLUDES 16% VAT
+                    // Price = Subtotal * 1.16 => Subtotal = Price / 1.16
+                    const itemSubtotal = itemTotal / 1.16
+                    const itemTax = itemTotal - itemSubtotal
+                    subtotal += itemSubtotal
+                    tax += itemTax
+                    total += itemTotal
+                } else {
+                    subtotal += itemTotal
+                    total += itemTotal
+                }
+            })
+
             const orderNumber = await OrderService.generateOrderNumber(storeId)
 
             const orderData: CreateOrderDTO = {
@@ -119,8 +138,8 @@ export default function POS() {
                 payment_method: 'cash', // Hardcoded for now
                 payment_status: 'paid',
                 subtotal: subtotal,
-                total: subtotal,
-                tax: 0,
+                total: total,
+                tax: tax,
                 discount: 0
             }
 
@@ -144,7 +163,7 @@ export default function POS() {
             }
 
             // Build and show ticket
-            const ticketData = buildTicketData(orderNumber, cart, 0, selectedCustomer)
+            const ticketData = buildTicketData(orderNumber, cart, tax, selectedCustomer)
             setLastTicket(ticketData)
             setShowTicketDialog(true)
             setCart([])
@@ -160,7 +179,7 @@ export default function POS() {
         }
     }
 
-    const total = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
+    const cartTotal = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
 
     return (
         <>
@@ -347,11 +366,11 @@ export default function POS() {
                     <CardFooter className="flex-col gap-4 p-6 pt-4">
                         <div className="flex w-full items-center justify-between text-lg font-bold">
                             <span>Total</span>
-                            <span>${total.toFixed(2)}</span>
+                            <span>${cartTotal.toFixed(2)}</span>
                         </div>
                         <Button className="w-full" size="lg" disabled={cart.length === 0 || isCheckingOut} onClick={handleCheckout}>
                             {isCheckingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Cobrar ${total.toFixed(2)}
+                            Cobrar ${cartTotal.toFixed(2)}
                         </Button>
                     </CardFooter>
                 </Card>

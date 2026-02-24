@@ -16,6 +16,7 @@ export type ModuleName =
     | 'stores'
     | 'delivery'
     | 'payroll'
+    | 'promotions'
 
 export type Permission = 'view' | 'create' | 'edit' | 'delete'
 
@@ -37,6 +38,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         stores: ['view', 'create', 'edit', 'delete'],
         delivery: ['view', 'create', 'edit', 'delete'],
         payroll: ['view', 'create', 'edit', 'delete'],
+        promotions: ['view', 'create', 'edit', 'delete'],
     },
     admin: {
         dashboard: ['view', 'create', 'edit', 'delete'],
@@ -54,6 +56,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         stores: [],
         delivery: ['view', 'create', 'edit', 'delete'],
         payroll: ['view', 'create'],
+        promotions: ['view', 'create', 'edit', 'delete'],
     },
     manager: {
         dashboard: ['view', 'create', 'edit', 'delete'],
@@ -71,6 +74,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         stores: [],
         delivery: ['view', 'create', 'edit'],
         payroll: [],
+        promotions: [],
     },
     cashier: {
         dashboard: [],
@@ -88,6 +92,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         stores: [],
         delivery: [],
         payroll: [],
+        promotions: [],
     },
     cook: {
         dashboard: ['view'],
@@ -105,6 +110,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         stores: [],
         delivery: [],
         payroll: [],
+        promotions: [],
     },
     delivery: {
         dashboard: [],
@@ -122,6 +128,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         users: [],
         stores: [],
         payroll: [],
+        promotions: [],
     },
     accountant: {
         dashboard: ['view'],
@@ -139,6 +146,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         stores: ['view'],
         delivery: [],
         payroll: ['view', 'create', 'edit'],
+        promotions: [],
     },
 }
 
