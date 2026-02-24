@@ -21,7 +21,8 @@ export function useTicketPrint() {
         orderNumber: string,
         cart: CartItem[],
         tax: number,
-        customer: Customer | null
+        customer: Customer | null,
+        orderType: 'pickup' | 'delivery'
     ): TicketData {
         const now = new Date()
         const pad = (n: number) => String(n).padStart(2, '0')
@@ -45,7 +46,7 @@ export function useTicketPrint() {
             cashierEmail: user?.email ?? 'Sistema ERP',
             orderDate,
             orderTime,
-            orderType: 'pickup',
+            orderType,
             items,
             subtotal,
             tax,
@@ -56,6 +57,7 @@ export function useTicketPrint() {
                     fullName: customer.full_name,
                     loyaltyPoints: (customer.loyalty_points ?? 0) + Math.floor(total),
                     loyaltyValue: ((customer.loyalty_points ?? 0) + Math.floor(total)) / 10,
+                    address: customer.address,
                 }
                 : undefined,
         }

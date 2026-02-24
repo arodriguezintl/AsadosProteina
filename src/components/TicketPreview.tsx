@@ -90,6 +90,9 @@ export default function TicketPreview({ open, onClose, ticket }: TicketPreviewPr
                         <div className="text-center mt-2">
                             <div className="border-t border-dashed border-gray-400 mb-2" />
                             <div>--- CLIENTE: {ticket.customer.fullName} ---</div>
+                            {ticket.orderType === 'delivery' && ticket.customer.address && (
+                                <div>DIR: {ticket.customer.address}</div>
+                            )}
                         </div>
                     )}
 

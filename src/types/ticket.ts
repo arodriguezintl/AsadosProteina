@@ -22,5 +22,6 @@ export interface TicketData {
         fullName: string
         loyaltyPoints: number
         loyaltyValue: number  // loyaltyPoints / 10
+        address?: string
     }
 }

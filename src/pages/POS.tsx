@@ -163,7 +163,7 @@ export default function POS() {
             }
 
             // Build and show ticket
-            const ticketData = buildTicketData(orderNumber, cart, tax, selectedCustomer)
+            const ticketData = buildTicketData(orderNumber, cart, tax, selectedCustomer, orderType)
             setLastTicket(ticketData)
             setShowTicketDialog(true)
             setCart([])
