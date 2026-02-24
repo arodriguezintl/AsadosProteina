@@ -16,9 +16,8 @@ import type { Customer } from '@/types/customers'
 import { CustomerService } from '@/services/customer.service'
 import { User } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
-import TicketPreview from '@/components/TicketPreview'
 import { useTicketPrint } from '@/hooks/useTicketPrint'
-import type { TicketData } from '@/types/ticket'
+import { PrintService } from '@/services/print.service'
 
 interface CartItem {
     product: Product
@@ -36,8 +35,6 @@ export default function POS() {
     const [customersList, setCustomersList] = useState<Customer[]>([])
     const [showCustomerSearch, setShowCustomerSearch] = useState(false)
     const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup')
-    const [showTicketDialog, setShowTicketDialog] = useState(false)
-    const [lastTicket, setLastTicket] = useState<TicketData | null>(null)
     const [showPromoDialog, setShowPromoDialog] = useState(false)
     const [promoExtraItem, setPromoExtraItem] = useState<string>('')
     const { user, storeId } = useAuthStore()
@@ -191,8 +188,8 @@ export default function POS() {
             }
 
             const ticketData = buildTicketData(orderNumber, finalCart, tax, selectedCustomer, orderType)
-            setLastTicket(ticketData)
-            setShowTicketDialog(true)
+            PrintService.printTicket(ticketData)
+
             setCart([])
             setSelectedCustomer(null)
             // Reload products to update stock display
@@ -402,12 +399,6 @@ export default function POS() {
                     </CardFooter>
                 </Card>
             </div>
-
-            <TicketPreview
-                open={showTicketDialog}
-                onClose={() => setShowTicketDialog(false)}
-                ticket={lastTicket}
-            />
 
             {/* Promo Interception Dialog */}
             <Dialog open={showPromoDialog} onOpenChange={setShowPromoDialog}>
