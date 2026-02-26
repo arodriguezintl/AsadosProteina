@@ -3,13 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, ShoppingCart, Loader2, Search } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Loader2, Search, Calculator } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'react-toastify'
 import { ProductService } from '@/services/product.service'
 import { OrderService } from '@/services/order.service'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
 import type { Product } from '@/types/inventory'
 import type { CreateOrderDTO, CreateOrderItemDTO } from '@/types/sales'
 import type { Customer } from '@/types/customers'
@@ -18,6 +18,8 @@ import { User } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useTicketPrint } from '@/hooks/useTicketPrint'
 import { PrintService } from '@/services/print.service'
+import { HRService } from '@/services/hr.service'
+import { supabase } from '@/lib/supabase'
 
 interface CartItem {
     product: Product
@@ -121,14 +123,15 @@ export default function POS() {
         processCheckout(false)
     }
 
-    const processCheckout = async (withPromo = false) => {
+    const processCheckout = async (withPromo = false, overridePromoItemId?: string) => {
         if (!storeId) return
         setIsCheckingOut(true)
 
         try {
             const finalCart = [...cart]
-            if (withPromo && promoExtraItem) {
-                const productToAdd = products.find(p => p.id === promoExtraItem)
+            const idToUse = overridePromoItemId || promoExtraItem
+            if (withPromo && idToUse) {
+                const productToAdd = products.find(p => p.id === idToUse)
                 if (productToAdd) {
                     finalCart.push({
                         product: { ...productToAdd, sale_price: 0 },
@@ -203,6 +206,66 @@ export default function POS() {
         }
     }
 
+    const handleCorteDeCaja = async () => {
+        if (!storeId || !user) return
+        try {
+            const { data: employee, error: empError } = await supabase
+                .from('employees')
+                .select('id, first_name, last_name')
+                .eq('user_id', user.id)
+                .single()
+
+            if (empError || !employee) {
+                toast.error('No se encontró perfil de empleado vinculado a tu usuario.')
+                return
+            }
+
+            const activeShift = await HRService.getActiveShift(employee.id)
+            if (!activeShift) {
+                toast.error('No tienes un turno activo actualmente. Haz "Check-In" en Recursos Humanos.')
+                return
+            }
+
+            if (confirm('¿Deseas realizar el Corte de Caja y cerrar tu turno actual?')) {
+                const { data: orders } = await supabase
+                    .from('orders')
+                    .select('id, total, status')
+                    .eq('store_id', storeId)
+                    .gte('created_at', activeShift.check_in)
+
+                const validOrders = orders?.filter(o => o.status !== 'cancelled') || []
+                const totalSales = validOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+                const trxCount = validOrders.length
+
+                await HRService.clockOut(employee.id, `Corte de Caja automático. Ventas: $${totalSales} (${trxCount} transacciones).`)
+
+                const printData: any = {
+                    businessName: "ASADOS PROTEINA",
+                    address: "CORTE DE CAJA",
+                    orderNumber: "CORTE",
+                    cashierEmail: `${employee.first_name} ${employee.last_name}`,
+                    orderDate: new Date().toLocaleDateString(),
+                    orderTime: new Date().toLocaleTimeString(),
+                    orderType: "pickup",
+                    items: [
+                        { description: "Transacciones", qty: trxCount, lineTotal: totalSales }
+                    ],
+                    subtotal: totalSales,
+                    tax: 0,
+                    total: totalSales,
+                    currency: "MXN"
+                }
+                PrintService.printTicket(printData)
+
+                toast.success('Corte de caja exitoso y turno cerrado.')
+            }
+
+        } catch (error) {
+            console.error('Error corte de caja:', error)
+            toast.error('Error al realizar corte de caja.')
+        }
+    }
+
     const cartTotal = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
 
     return (
@@ -215,15 +278,21 @@ export default function POS() {
                             <h1 className="text-2xl font-bold">Punto de Venta</h1>
                             <p className="text-muted-foreground">Selecciona productos para agregar a la orden</p>
                         </div>
-                        <div className="w-[300px]">
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Buscar productos..."
-                                    className="pl-8"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                        <div className="flex items-center gap-4">
+                            <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50 bg-white" onClick={handleCorteDeCaja}>
+                                <Calculator className="h-4 w-4 mr-2" />
+                                Corte de Caja
+                            </Button>
+                            <div className="w-[300px]">
+                                <div className="relative">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Buscar productos..."
+                                        className="pl-8"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -407,34 +476,38 @@ export default function POS() {
                         <DialogTitle>¡Cliente Califica para Promoción!</DialogTitle>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
-                        <p className="text-sm text-muted-foreground">
-                            El cliente ha acumulado suficientes beneficios para una recompensa (Extra / Complemento).
-                            Seleccione el producto a otorgar o déjelo en blanco para omitir.
+                        <p className="text-lg font-medium text-center mb-4">
+                            Seleccione la recompensa del cliente:
                         </p>
-                        <Select value={promoExtraItem} onValueChange={setPromoExtraItem}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Buscar en menú..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {products.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className="grid grid-cols-2 gap-4">
+                            <Button
+                                className="h-32 text-2xl font-bold flex flex-col items-center justify-center bg-orange-600 hover:bg-orange-700 text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+                                onClick={() => {
+                                    const salchicha = products.find(p => p.name.toLowerCase().includes('salchicha'))
+                                    setShowPromoDialog(false)
+                                    processCheckout(true, salchicha?.id)
+                                }}
+                            >
+                                Salchicha
+                            </Button>
+                            <Button
+                                className="h-32 text-2xl font-bold flex flex-col items-center justify-center bg-yellow-600 hover:bg-yellow-700 text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+                                onClick={() => {
+                                    const huevo = products.find(p => p.name.toLowerCase().includes('huevo cocido') || p.name.toLowerCase() === 'huevo')
+                                    setShowPromoDialog(false)
+                                    processCheckout(true, huevo?.id)
+                                }}
+                            >
+                                Huevo Cocido
+                            </Button>
+                        </div>
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => {
+                        <Button variant="outline" className="w-full mt-4" onClick={() => {
                             setShowPromoDialog(false)
                             setPromoExtraItem('')
                             processCheckout(false)
-                        }}>Omitir Promoción</Button>
-                        <Button disabled={!promoExtraItem || isCheckingOut} onClick={() => {
-                            setShowPromoDialog(false)
-                            processCheckout(true)
-                        }}>
-                            {isCheckingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Agregar Extra y Cobrar
-                        </Button>
+                        }}>Omitir Promoción (Ninguna)</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

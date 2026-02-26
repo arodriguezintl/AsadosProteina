@@ -82,7 +82,7 @@ export default function CustomersPage() {
                         <TableRow>
                             <TableHead>Nombre</TableHead>
                             <TableHead>Contacto</TableHead>
-                            <TableHead>Puntos</TableHead>
+                            <TableHead>Ventas Realizadas</TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -118,7 +118,7 @@ export default function CustomersPage() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="font-bold text-orange-600">
-                                            {customer.loyalty_points || 0} pts
+                                            {customer.total_orders || 0}
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-right flex items-center justify-end gap-2">

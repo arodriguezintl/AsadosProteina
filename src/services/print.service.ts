@@ -10,34 +10,35 @@ function buildTicketHTML(data: TicketData): string {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-size: 16px;
     width: 80mm;
-    padding: 4mm;
+    padding: 6mm;
     color: #000;
     background: #fff;
+    line-height: 1.4;
   }
-  .header { text-align: center; margin-bottom: 6px; }
-  .header .brand { font-size: 14px; font-weight: bold; }
-  .line { border-top: 1px dashed #000; margin: 4px 0; }
-  .double-line { border-top: 3px double #000; margin: 4px 0; }
-  .row { display: flex; justify-content: space-between; }
-  .items { font-size: 11px; }
-  .items .item { display: flex; justify-content: space-between; margin: 2px 0; }
-  .items .item .desc { flex: 1; margin: 0 4px; }
-  .totals { margin-top: 6px; }
-  .totals .row { margin: 1px 0; }
+  .header { text-align: center; margin-bottom: 10px; }
+  .header .brand { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
+  .line { border-top: 1px dashed #000; margin: 8px 0; }
+  .double-line { border-top: 3px double #000; margin: 8px 0; }
+  .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .items { font-size: 14px; margin: 8px 0; }
+  .items .item { display: flex; justify-content: space-between; margin: 4px 0; }
+  .items .item .desc { flex: 1; margin: 0 8px; }
+  .totals { margin-top: 10px; }
+  .totals .row { margin: 2px 0; }
   .grand-total {
-    font-size: 15px;
+    font-size: 20px;
     font-weight: bold;
     text-align: center;
-    margin: 6px 0;
+    margin: 10px 0;
     border-top: 3px double #000;
     border-bottom: 3px double #000;
-    padding: 3px 0;
+    padding: 5px 0;
   }
-  .footer { text-align: center; margin-top: 8px; font-size: 11px; }
+  .footer { text-align: center; margin-top: 12px; font-size: 14px; line-height: 1.5; }
   @media print {
-    body { width: 80mm; }
+    body { width: 80mm; padding: 6mm; }
     @page { margin: 0; size: 80mm auto; }
   }
 </style>
@@ -59,15 +60,15 @@ function buildTicketHTML(data: TicketData): string {
   <div>TIPO: ${data.orderType === 'pickup' ? 'Para Llevar' : 'Delivery'}</div>
 
   <div class="line"></div>
-  <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:11px">
-    <span>CANT</span><span style="flex:1;margin:0 4px">DESCRIPCIÓN</span><span>IMPORTE</span>
+  <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px;margin:8px 0;">
+    <span>CANT</span><span style="flex:1;margin:0 8px">DESCRIPCIÓN</span><span>IMPORTE</span>
   </div>
   <div class="line"></div>
 
   <div class="items">
     ${data.items.map(item => `
       <div class="item">
-        <span>${String(item.qty).padStart(3)}</span>
+        <span>${String(item.qty).padStart(2)}</span>
         <span class="desc">${item.description}</span>
         <span>$${item.lineTotal.toFixed(2)}</span>
       </div>
@@ -101,18 +102,39 @@ function buildTicketHTML(data: TicketData): string {
 export const PrintService = {
   printTicket(data: TicketData): void {
     const html = buildTicketHTML(data)
-    const win = window.open('', '_blank', 'width=420,height=720,scrollbars=yes')
+
+    // Use an invisible iframe to bypass popup blockers
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    document.body.appendChild(iframe)
+
+    const win = iframe.contentWindow
     if (!win) {
-      alert('Por favor permite ventanas emergentes para imprimir el ticket.')
+      alert('Error al acceder al sistema de impresión. Por favor contacte soporte.')
+      document.body.removeChild(iframe)
       return
     }
+
     win.document.open()
     win.document.write(html)
     win.document.close()
-    // Wait longer (500ms) to ensure the image is loaded before triggering print dialog
-    win.focus()
+
+    // Wait 500ms to ensure the ticket logic (and possible logos) are loaded before printing
     setTimeout(() => {
+      win.focus()
       win.print()
+
+      // Cleanup iframe after printing dialog closes
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe)
+        }
+      }, 2000) // Delay to ensure print dialog triggers before removal
     }, 500)
   }
 }
