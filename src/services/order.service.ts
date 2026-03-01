@@ -69,6 +69,38 @@ export const OrderService = {
         return { ...newOrder, rewardName }
     },
 
+    async getKanbanOrders(storeId: string) {
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                items:order_items(
+                    *,
+                    product:inventory_products(
+                        name
+                    )
+                ),
+                customer:customers(full_name)
+            `)
+            .eq('store_id', storeId)
+            .or(`status.in.(pending,preparing,ready),and(status.eq.completed,created_at.gte.${todayStart.toISOString()})`)
+            .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        return data.map((order: any) => ({
+            ...order,
+            customer_name: order.customer?.full_name,
+            items: order.items?.map((item: any) => ({
+                ...item,
+                product_name: item.product?.name || 'Unknown Product'
+            }))
+        })) as Order[]
+    },
+
     async getOrders(statusFilter?: OrderStatus | OrderStatus[], limit?: number, storeId?: string) {
         let query = supabase
             .from('orders')

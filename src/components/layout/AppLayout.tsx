@@ -1,13 +1,14 @@
 import { useAuthStore } from "@/store/auth.store"
 import { hasModuleAccess } from "@/config/permissions"
-import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store } from "lucide-react"
+import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store, Pin, PinOff } from "lucide-react"
 import { Outlet, Link, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import logoImage from "@/assets/logo.jpg"
 
-const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false }: { to: string, icon: any, label: string, exact?: boolean, prefix?: boolean }) => {
+const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false, isExpanded = true }: { to: string, icon: any, label: string, exact?: boolean, prefix?: boolean, isExpanded?: boolean }) => {
     const location = useLocation()
     const isActive = exact
         ? location.pathname === to
@@ -21,12 +22,14 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false }: { to:
             className={cn(
                 "flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group",
                 isActive
-                    ? "bg-[#C1FF72] text-[#0B2B26] font-extrabold shadow-md"
+                    ? "bg-asados-lime text-white font-extrabold shadow-md"
                     : "text-white hover:bg-white/10"
             )}
         >
-            <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-[#0B2B26]" : "text-white group-hover:text-[#C1FF72]")} />
-            <span className="text-sm font-medium">{label}</span>
+            <Icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-white" : "text-white group-hover:text-asados-lime")} />
+            <span className={cn("text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300",
+                !isExpanded ? "w-0 opacity-0" : "w-auto opacity-100"
+            )}>{label}</span>
         </Link>
     )
 }
@@ -34,6 +37,10 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false }: { to:
 export function AppLayout() {
     const { user, role, modules, signOut, storeId } = useAuthStore()
     const [storeName, setStoreName] = useState<string>('')
+    const [isPinned, setIsPinned] = useState(true)
+    const [isHovered, setIsHovered] = useState(false)
+
+    const isExpanded = isPinned || isHovered
 
     useEffect(() => {
         if (storeId) {
@@ -68,48 +75,68 @@ export function AppLayout() {
         <div className="flex min-h-screen bg-[#F4F7F2]">
             {/* Fixed Sidebar */}
             <aside
-                className="w-64 text-white flex flex-col fixed inset-y-0 z-50 shadow-2xl border-r border-white/10"
-                style={{ backgroundColor: '#0B2B26' }}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                className={cn(
+                    "text-white flex flex-col fixed inset-y-0 z-50 shadow-2xl border-r border-white/10 transition-all duration-300",
+                    isExpanded ? "w-64" : "w-20"
+                )}
+                style={{ backgroundColor: '#1F2937' }}
             >
                 {/* Header */}
-                <div className="p-8 pb-4">
-                    <div className="text-2xl font-black text-[#C1FF72] tracking-tight relative inline-block">
-                        Asados P.
-                        <span className="text-[10px] absolute -top-1 -right-8 bg-blue-500 text-white px-1 rounded">BETA</span>
+                <div className="p-4 pt-6 pb-2 min-h-[100px] flex flex-col items-center justify-center relative">
+                    {isExpanded && (
+                        <button
+                            onClick={() => setIsPinned(!isPinned)}
+                            className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+                            title={isPinned ? "Unpin sidebar" : "Pin sidebar"}
+                        >
+                            {isPinned ? <Pin className="h-4 w-4" /> : <PinOff className="h-4 w-4" />}
+                        </button>
+                    )}
+
+                    <div className={cn("relative flex flex-col items-center justify-center transition-all duration-300", isExpanded ? "w-full" : "w-10")}>
+                        <img
+                            src={logoImage}
+                            alt="Asados Proteina"
+                            className={cn("h-auto object-contain transition-all duration-300", isExpanded ? "max-h-16 w-auto" : "max-h-10 w-auto")}
+                        />
+                        {isExpanded && <span className="text-[10px] bg-blue-500 text-white px-1 rounded shadow-sm mt-1">BETA</span>}
                     </div>
-                    <div className="mt-1">
+
+                    <div className={cn("mt-2 text-center transition-all duration-300 whitespace-nowrap overflow-hidden", !isExpanded ? "h-0 opacity-0" : "h-auto opacity-100")}>
                         <p className="text-xs text-white/60 font-medium">ERP Management</p>
-                        {storeName && <p className="text-xs text-[#C1FF72] font-bold uppercase tracking-wider">{storeName}</p>}
+                        {storeName && <p className="text-xs text-asados-lime font-bold uppercase tracking-wider truncate px-2">{storeName}</p>}
                     </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-4 space-y-1 overflow-y-auto py-4">
+                <nav className="flex-1 px-3 space-y-1 overflow-y-auto py-4 overflow-x-hidden">
                     {/* Principal Section */}
                     {(canViewDashboard || canViewOrders || canViewPOS) && (
                         <>
-                            <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3">Principal</div>
-                            {canViewDashboard && <NavItem to="/dashboard" icon={LayoutDashboard} label="Inicio" exact />}
-                            {canViewOrders && <NavItem to="/orders" icon={ClipboardList} label="Pedidos" />}
-                            {canViewPOS && <NavItem to="/pos" icon={Calculator} label="Punto de Venta" />}
+                            <div className={cn("text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 transition-opacity duration-300 whitespace-nowrap", !isExpanded && "opacity-0")}>Principal</div>
+                            {canViewDashboard && <NavItem to="/dashboard" icon={LayoutDashboard} label="Inicio" exact isExpanded={isExpanded} />}
+                            {canViewOrders && <NavItem to="/orders" icon={ClipboardList} label="Pedidos" isExpanded={isExpanded} />}
+                            {canViewPOS && <NavItem to="/pos" icon={Calculator} label="Punto de Venta" isExpanded={isExpanded} />}
                         </>
                     )}
 
                     {/* Operations Section */}
                     {(canViewInventory || canViewRecipes) && (
                         <>
-                            <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6">Operaciones</div>
+                            <div className={cn("text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6 transition-opacity duration-300 whitespace-nowrap", !isExpanded && "opacity-0")}>Operaciones</div>
                             {canViewInventory && (
                                 <>
-                                    <NavItem to="/inventory/stock" icon={Package} label="Inventario" prefix />
-                                    <NavItem to="/inventory/menu" icon={List} label="Productos Venta" prefix />
-                                    <NavItem to="/inventory/categories" icon={Settings} label="Categorías" />
+                                    <NavItem to="/inventory/stock" icon={Package} label="Inventario" prefix isExpanded={isExpanded} />
+                                    <NavItem to="/inventory/menu" icon={List} label="Productos Venta" prefix isExpanded={isExpanded} />
+                                    <NavItem to="/inventory/categories" icon={Settings} label="Categorías" isExpanded={isExpanded} />
                                 </>
                             )}
                             {canViewRecipes && (
                                 <>
-                                    <NavItem to="/recipes" icon={ChefHat} label="Recetas" exact />
-                                    <NavItem to="/recipes/simulator" icon={Calculator} label="Simulador" />
+                                    <NavItem to="/recipes" icon={ChefHat} label="Recetas" exact isExpanded={isExpanded} />
+                                    <NavItem to="/recipes/simulator" icon={Calculator} label="Simulador" isExpanded={isExpanded} />
                                 </>
                             )}
                         </>
@@ -118,22 +145,22 @@ export function AppLayout() {
                     {/* Administration Section */}
                     {(canViewFinance || canViewTransactions || canViewFinanceCategories || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores || canViewPromotions) && (
                         <>
-                            <div className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6">Administración</div>
-                            {canViewFinance && <NavItem to="/finance" icon={PieChart} label="Finanzas" exact />}
-                            {canViewTransactions && <NavItem to="/finance/transactions" icon={ArrowLeftRight} label="Transacciones" />}
-                            {canViewFinanceCategories && <NavItem to="/finance/categories" icon={Wallet} label="Categorías Fin." />}
+                            <div className={cn("text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6 transition-opacity duration-300 whitespace-nowrap", !isExpanded && "opacity-0")}>Administración</div>
+                            {canViewFinance && <NavItem to="/finance" icon={PieChart} label="Finanzas" exact isExpanded={isExpanded} />}
+                            {canViewTransactions && <NavItem to="/finance/transactions" icon={ArrowLeftRight} label="Transacciones" isExpanded={isExpanded} />}
+                            {canViewFinanceCategories && <NavItem to="/finance/categories" icon={Wallet} label="Categorías Fin." isExpanded={isExpanded} />}
 
-                            {canViewReports && <NavItem to="/reports" icon={BarChart3} label="Reportes" prefix />}
-                            {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix />}
-                            {canViewPromotions && <NavItem to="/admin/promotions" icon={PieChart} label="Promociones" prefix />}
-                            {canViewHR && <NavItem to="/hr" icon={UserCog} label="Personal" prefix />}
-                            {canViewStores && <NavItem to="/admin/stores" icon={Store} label="Tiendas" />}
+                            {canViewReports && <NavItem to="/reports" icon={BarChart3} label="Reportes" prefix isExpanded={isExpanded} />}
+                            {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix isExpanded={isExpanded} />}
+                            {canViewPromotions && <NavItem to="/admin/promotions" icon={PieChart} label="Promociones" prefix isExpanded={isExpanded} />}
+                            {canViewHR && <NavItem to="/hr" icon={UserCog} label="Personal" prefix isExpanded={isExpanded} />}
+                            {canViewStores && <NavItem to="/admin/stores" icon={Store} label="Tiendas" isExpanded={isExpanded} />}
                         </>
                     )}
                 </nav>
 
                 {/* Footer / User Profile */}
-                <div className="p-4 bg-black/20">
+                <div className="p-3 bg-black/20">
                     {/* Plan Pro box hidden for next phase
                     <div className="bg-asados-lime/10 p-4 rounded-2xl border border-asados-lime/20 mb-4">
                         <p className="text-xs text-asados-lime font-bold uppercase mb-1">Plan Pro</p>
@@ -145,17 +172,17 @@ export function AppLayout() {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition group">
+                            <button className={cn("flex items-center p-3 rounded-xl hover:bg-white/5 transition group", isExpanded ? "justify-between w-full" : "justify-center w-auto")}>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-asados-lime to-green-400 flex items-center justify-center text-asados-dark font-black text-sm">
+                                    <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-asados-lime to-orange-400 flex items-center justify-center text-asados-dark font-black text-sm">
                                         {user?.email?.[0]?.toUpperCase() || 'U'}
                                     </div>
-                                    <div className="text-left">
+                                    <div className={cn("text-left transition-all duration-300 overflow-hidden whitespace-nowrap", !isExpanded ? "w-0 opacity-0" : "w-auto opacity-100")}>
                                         <p className="text-sm font-bold text-white">{user?.email?.split('@')[0] || 'Usuario'}</p>
                                         <p className="text-xs text-white/60 capitalize">{role || 'cashier'}</p>
                                     </div>
                                 </div>
-                                <ChevronUp className="h-4 w-4 text-white/60 group-hover:text-white transition" />
+                                {isExpanded && <ChevronUp className="h-4 w-4 shrink-0 text-white/60 group-hover:text-white transition" />}
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
@@ -173,7 +200,7 @@ export function AppLayout() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 ml-64">
+            <main className={cn("flex-1 transition-all duration-300", isPinned ? "ml-64" : "ml-20")}>
                 <div className="p-8">
                     <Outlet />
                 </div>

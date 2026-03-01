@@ -836,7 +836,7 @@ export default function HRPage() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-[#0B2B26] tracking-tight">Recursos Humanos</h1>
+                    <h1 className="text-3xl font-black text-asados-dark tracking-tight">Recursos Humanos</h1>
                     <p className="text-muted-foreground">Gestión de empleados, control de horas y nómina.</p>
                 </div>
             </div>

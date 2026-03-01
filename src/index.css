@@ -28,6 +28,12 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
+  --color-asados-dark: #1F2937;
+  --color-asados-lime: #F97316;
+  --color-asados-bg: #F3F4F6;
+  --color-asados-surface: #FFFFFF;
+  --color-asados-muted: #6B7280;
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);

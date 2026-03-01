@@ -112,7 +112,7 @@ export default function OrdersPage() {
     const loadOrders = async () => {
         if (!storeId) return
         try {
-            const data = await OrderService.getOrders(undefined, undefined, storeId)
+            const data = await OrderService.getKanbanOrders(storeId)
             setOrders(data)
         } catch (error) {
             console.error('Error loading orders:', error)

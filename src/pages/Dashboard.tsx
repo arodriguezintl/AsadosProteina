@@ -183,7 +183,7 @@ export default function Dashboard() {
                                 />
                                 <Bar
                                     dataKey="total"
-                                    fill="#C1FF72"
+                                    fill="#F97316"
                                     radius={[8, 8, 8, 8]}
                                     barSize={40}
                                 />

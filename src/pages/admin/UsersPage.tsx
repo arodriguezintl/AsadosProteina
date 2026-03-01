@@ -246,7 +246,7 @@ export default function UsersPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-[#0B2B26] tracking-tight">Administración de Usuarios</h1>
+                    <h1 className="text-3xl font-black text-asados-dark tracking-tight">Administración de Usuarios</h1>
                     <p className="text-muted-foreground">Gestión de usuarios, roles y permisos</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

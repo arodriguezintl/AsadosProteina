@@ -8,9 +8,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        'asados-dark': '#0B2B26',      // Verde Bosque (Sidebar/Textos)
-        'asados-lime': '#C1FF72',      // Verde Lima (Acentos/Botones/KPIs)
-        'asados-bg': '#F4F7F2',        // Gris verdoso suave (Fondo General)
+        'asados-dark': '#1F2937',      // Dark Gray (Sidebar/Textos)
+        'asados-lime': '#F97316',      // Vibrant Orange (Acentos/Botones/KPIs)
+        'asados-bg': '#F3F4F6',        // Light Gray (Fondo General)
         'asados-surface': '#FFFFFF',   // Blanco (Tarjetas/Widgets)
         'asados-muted': '#6B7280',     // Gris (Textos secundarios)
       },

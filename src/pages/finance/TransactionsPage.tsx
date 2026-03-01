@@ -103,7 +103,7 @@ export default function TransactionsPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-[#0B2B26] tracking-tight">Transacciones</h1>
+                    <h1 className="text-3xl font-black text-asados-dark tracking-tight">Transacciones</h1>
                     <p className="text-muted-foreground">Registro de ingresos y gastos</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

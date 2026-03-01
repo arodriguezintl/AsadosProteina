@@ -175,7 +175,7 @@ export default function StoresPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-black text-[#0B2B26] tracking-tight">Tiendas</h1>
+                    <h1 className="text-3xl font-black text-asados-dark tracking-tight">Tiendas</h1>
                     <p className="text-muted-foreground">Gestión de sucursales y puntos de venta</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

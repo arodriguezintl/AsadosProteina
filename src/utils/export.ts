@@ -42,7 +42,7 @@ export const exportToPDF = (
         body: dataRows,
         theme: 'striped',
         styles: { fontSize: 9 },
-        headStyles: { fillColor: [11, 43, 38] } // Matching #0B2B26
+        headStyles: { fillColor: [31, 41, 55] } // Matching #1F2937
     })
 
     doc.save(`${fileName}.pdf`)

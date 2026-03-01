@@ -80,7 +80,7 @@ export default function FinanceDashboard() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black text-[#0B2B26] tracking-tight">Dashboard Financiero</h1>
+                    <h1 className="text-3xl font-black text-asados-dark tracking-tight">Dashboard Financiero</h1>
                     <p className="text-muted-foreground">Resumen de ingresos, gastos y balance general</p>
                 </div>
                 <div className="flex gap-2">
