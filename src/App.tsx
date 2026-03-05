@@ -22,19 +22,60 @@ import PromotionsPage from '@/pages/admin/PromotionsPage'
 import PromotionForm from '@/pages/admin/PromotionForm'
 import Login from '@/pages/Login'
 import { useAuthStore } from '@/store/auth.store'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthStore()
+  const { user, loading, checkSession, signOut } = useAuthStore()
+  const [isTakingLong, setIsTakingLong] = useState(false)
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (loading) {
+      timeoutId = setTimeout(() => {
+        setIsTakingLong(true)
+      }, 5000) // Show retry option after 5 seconds of loading
+    } else {
+      setIsTakingLong(false)
+    }
+
+    return () => clearTimeout(timeoutId)
+  }, [loading])
 
   // Removed redundant checkSession call here as it is handled globally in App component
   // to avoid race conditions and double loading states.
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Cargando...</div>
+    return (
+      <div className="flex flex-col h-screen items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-lg font-medium text-gray-700 dark:text-gray-200">Cargando aplicación...</p>
+
+        {isTakingLong && (
+          <div className="mt-8 text-center animate-fade-in max-w-sm">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              La carga está tomando más de lo esperado. Esto puede deberse a bloqueadores de rastreo (como Brave Shields) o una conexión lenta.
+            </p>
+            <div className="flex flex-col gap-2 relative z-50">
+              <button
+                onClick={() => checkSession()}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-orange-600 transition-colors pointer-events-auto cursor-pointer"
+              >
+                Reintentar
+              </button>
+              <button
+                onClick={() => signOut()}
+                className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors pointer-events-auto cursor-pointer mt-2"
+              >
+                Cerrar sesión / Reiniciar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (!user) {

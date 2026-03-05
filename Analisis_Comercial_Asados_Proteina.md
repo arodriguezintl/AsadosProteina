@@ -1,100 +1,93 @@
 # Análisis Comercial y de Esfuerzo: Proyecto "Asados Proteína ERP & POS"
 
-Este documento presenta una evaluación detallada del esfuerzo humano requerido para construir un sistema de esta magnitud desde cero, el costo de producción, el precio de mercado en México y una propuesta de modelo de negocio SaaS (Software as a Service) segmentado en planes.
+Este documento presenta una evaluación actualizada del esfuerzo humano requerido para construir un sistema de esta magnitud desde cero, el costo de producción, el precio de mercado en México y una propuesta de modelo de negocio SaaS (Software as a Service) segmentado en planes, tomando en cuenta las últimas integraciones tecnológicas de alto impacto (simuladores de costos, automatizaciones de pedidos y finanzas avanzadas).
 
 ---
 
 ## 1. Estimación de Esfuerzo Invertido (Horas Humano)
 
-La construcción de un sistema ERP y POS robusto, con arquitectura moderna (React, TypeScript, Supabase, Tailwind) y componentes de tiempo real, se desglose de la siguiente manera, asumiendo el trabajo de un desarrollador Full-Stack Senior:
+La construcción de un sistema ERP y POS robusto, con arquitectura moderna (React, TypeScript, Supabase, Tailwind) y procesamiento en tiempo real, se desglosa de la siguiente manera tras las recientes adiciones estructurales, asumiendo el trabajo de un desarrollador Full-Stack Semi-Senior/Senior:
 
-| Componente / Módulo | Nivel de Complejidad | Horas Estimadas |
-| :--- | :--- | :--- |
-| **Arquitectura Base & DevOps** (Configuración Supabase, Git, Vite, Auth, RBAC) | Medio | 60 hrs |
-| **Punto de Venta (POS)** (Carrito, cálculo de impuestos, offline-first UI, tickets) | Alto | 120 hrs |
-| **Inventario y Recetas** (Control de stock, ingredientes, gramajes, costeos) | Alto | 100 hrs |
-| **CRM de Clientes** (Gestión, direcciones, historial, puntos de lealtad) | Medio | 40 hrs |
-| **Reportes & Finanzas** (Dashboard, gráficas analíticas, exportación Excel/PDF) | Alto | 80 hrs |
-| **Módulos Administrativos** (Promociones, Delivery, Recursos Humanos, RRHH) | Alto | 100 hrs |
-| **Gestión Multisucursal & Empleados** (Roles, permisos complejos) | Medio | 60 hrs |
-| **Testing, Refactorización & QA** (Pruebas manuales, estabilización) | Medio | 80 hrs |
-| --- | --- | --- |
-| **Total de Esfuerzo Estimado** | | **~640 Horas** |
-
-*Nota: 640 horas equivalen aproximadamente a 4 meses de trabajo a tiempo completo (40 hr/sem) para un solo desarrollador experimentado, o 2 meses para un equipo de dos.*
+| Componente / Módulo | Nivel de Complejidad | Horas Estimadas | Novedades Recientes Integradas |
+| :--- | :--- | :--- | :--- |
+| **Arquitectura Base, UI/UX & DevOps** | Medio-Alto | 80 hrs | Sidebar colapsable interactiva, optimización de contrastes, procesos en segundo plano (Cron jobs/limpiezas de sistema). |
+| **Punto de Venta (POS) & Caja** | Alto | 130 hrs | Auto-impresión directa de tickets, botones rápidos de promociones específicas, interfaz ampliada para lecturas rápidas e integración del "Corte de Caja" con la Nómina. |
+| **Inventario y Recetas Avanzadas** | Muy Alto | 150 hrs | Control de gramajes exactos, costeo automático por ingrediente, cálculo de márgenes diferenciados (Canal Directo vs Uber Eats) y el **Simulador de precios de proveedores**. |
+| **CRM de Clientes Leales** | Medio | 50 hrs | Cálculo dinámico del programa de "Puntos" con base en ventas realizadas o promociones aplicadas. |
+| **Flujo de Pedidos (Kanban)** | Medio | 50 hrs | Interfaz limpia (se retiró el estado de Reparto), protección contra reversión de pedidos completados, automatización de limpieza de la columna "Completados" al cierre del día. |
+| **Reportes, Finanzas & RRHH** | Alto | 90 hrs | Dashboard analítico, gráficas de ventas, exportaciones e integración nativa de ventas diarias con los salarios y pagos al personal. |
+| **Gestión Multisucursal & Empleados** | Medio | 60 hrs | Roles de acceso, simplificación del onboarding (Login directo sin "Remember me"). |
+| **Testing, Refactorización & QA** | Alto | 100 hrs | Pruebas de integración de base de datos (resolución de anomalías de schemas de Inventarios Globales) y blindaje de procesos en navegadores estrictos (Pop-ups). |
+| --- | --- | --- | --- |
+| **Total de Esfuerzo Estimado** | | **~710 Horas** | Equivalente a ~4.5 - 5 meses de trabajo FTE (Full-Time Equivalent). |
 
 ---
 
 ## 2. Cálculo de Costo por Hora e Inversión de Producción
 
-Para el mercado mexicano, el perfil requerido para construir una plataforma así es de un **Desarrollador Full-Stack Semi-Senior o Senior**, o una pequeña agencia de software.
+Para el mercado mexicano, el perfil ágil y autosuficiente requerido para mantener y escalar plataformas SaaS asíncronas de esta complejidad es un **Desarrollador Full-Stack Senior** o una agencia nativa de software.
 
-- **Tarifa por hora promedio (Freelance/Agencia BTL):** $500 - $800 MXN / hora ($25 - $40 USD).
-- **Tarifa utilizada para el cálculo:** $600 MXN / hora.
+- **Tarifa por hora promedio (Freelance Elite/Agencia Tech):** $600 - $900 MXN / hora ($30 - $45 USD).
+- **Tarifa utilizada para un cálculo conservador:** $650 MXN / hora.
 
-**Cálculo Base:**
-640 horas × $600 MXN/hr = **$384,000 MXN**
+**Cálculo Base de Construcción Codebase:**
+710 horas × $650 MXN/hr = **$461,500 MXN**
 
-**Consideración Adicional (Costos de Oportunidad y Gestión):**
-Si este proyecto se cotizara como "Desarrollo a la Medida" para un cliente, normalmente se agrega un margen de riesgo y gestión del proyecto (PM, UI/UX base) de al menos 25-30%.
+**Consideración Adicional (Costos de Oportunidad, QA y Gestión de Proyecto):**
+Si este proyecto se cotizara hoy como "Desarrollo a la Medida" para un cliente corporativo, se contempla un margen de riesgo técnico y de gestión operativa (PM, Consultoría de UX) del 30%:
 
-- **Costo total de producción (Base + Riesgo):** **~$500,000 MXN**
+- **Costo total de producción de la plataforma (Valor base del Acivo Digital):** **~$600,000 MXN**
 
 ---
 
-## 3. Precio de Mercado Sugerido (Mercado Mexicano)
+## 3. Precio de Mercado Sugerido (Venta Completa / White-Label)
 
-Si se vendiera la **licencia perpetua o el código fuente (White-Label)** a una empresa (por ejemplo, una cadena de restaurantes que quiere ser dueña del software), el precio en México debería oscilar entre:
+Si el objetivo de negocio pivotara a vender la **licencia perpetua y el código fuente completo** a un corporativo restaurantero que desea total independencia tecnológica (evitando rentas de terceros), el precio llave en mano debería tasarse en:
 
-💰 **Rango Justo de Mercado:** **$450,000 a $700,000 MXN**
-*(Dependiendo de si incluye despliegue en sus propios servidores, capacitación a sus gerentes y una póliza de meses de soporte pasivo).*
+💰 **Rango Justo de Mercado:** **$550,000 a $850,000 MXN**
+*(Este monto oscila dependiendo si se incluyen las horas de capacitación al liderazgo corporativo para aprovechar funciones core como su Simulador de Costos, la migración de bases de datos y la garantía técnica).*
 
 ---
 
 ## 4. Segmentación del Producto como Servicio (SaaS)
 
-El modelo más rentable para este tipo de software no es venderlo en pago único, sino rentarlo mensual/anualmente (modelo SaaS).
+El modelo de mayor escalabilidad y valoración de la empresa sigue siendo la renta por suscripción mensual (SaaS). Dada la robustez actual de la herramienta —especialmente su enfoque en blindar las utilidades de los restaurantes mediante herramientas predictivas (Simuladores de Inflación proveedora y márgenes de Uber Eats)—, el valor percibido por el cliente (Ticket Promedio) ha aumentado.
 
-A continuación, una propuesta de segmentación (Planes y Precios) adaptada a la industria restaurantera en México:
-
-### Plan BÁSICO 🌱
-*Diseñado para: Food trucks, locales pequeños, cafeterías de una sola caja.*
+### Plan BÁSICO 🌱 (Módulo de Rapidez Operativa)
+*Ideal para: Food trucks, locales emergentes de comida rápida, o puestos con un solo cajero central.*
 - **Funciones incluidas:**
-  - Punto de Venta (POS) básico.
-  - Inventario simple (solo productos terminados, no recetas).
-  - Corte de caja y tickets.
-  - Gestión básica de clientes (sin lealtad).
-- **Límites:** 1 Sucursal, 2 Usuarios (Cajero, Admin).
-- **Soporte:** Correo electrónico.
-- **Precio Sugerido:** **$499 a $799 MXN / mes** (o $6,000 MXN / anual)
+  - Punto de Venta (POS) veloz con Auto-impresión directa.
+  - Tablero de Pedidos Kanban con limpieza automatizada.
+  - Control de Inventario fundamental.
+  - Gestión rápida del directorio de clientes.
+- **Límites:** 1 Sucursal, 2 Usuarios (Cajero, Gerente).
+- **Precio Sugerido:** **$699 a $899 MXN / mes** (o un paquete de $8,500 MXN / anual)
 
-### Plan PRO (Recomendado) 🚀
-*Diseñado para: Restaurantes medianos, asaderos establecidos, locales con mesas y envío.*
+### Plan PRO (Recomendado) 🚀 (Control Financiero y Fidelización)
+*Ideal para: Restaurantes medianos y asaderos establecidos que combinan ventas en local y plataformas móviles.*
 - **Funciones incluidas:**
   - Todo lo del plan Básico.
-  - Control exacto de Inventario y **Recetas (costeo, gramaje)**.
-  - Módulo CRM de Clientes e historial.
-  - **Módulo de Promociones y Descuentos.**
-  - **Reportes Financieros y Exportaciones (Gráficas).**
-  - Impuestos desglosados (IVA).
+  - **Inventario y Recetas (Gramaje Exacto):** Desglose inteligente de cada ingrediente.
+  - **Finanzas Omnicanal:** Costeo automático de utilidades diferenciando **Venta Directa vs. Uber Eats/Rappi**.
+  - **CRM Dinámico:** Acumulación algorítmica de puntos en clientes según transacciones.
+  - Caja Administrativa: Corte avanzado con reporte ciego y conciliación rápida.
 - **Límites:** Hasta 2 Sucursales, 5 Usuarios.
-- **Soporte:** Chat y WhatsApp.
-- **Precio Sugerido:** **$1,499 a $1,999 MXN / mes** (o $18,000 MXN / anual)
+- **Precio Sugerido:** **$1,699 a $2,199 MXN / mes** (o un paquete de $20,000 MXN / anual)
 
-### Plan PLUS / ENTERPRISE 🏢
-*Diseñado para: Cadenas, franquicias o restaurantes en crecimiento veloz.*
+### Plan PLUS / ENTERPRISE 🏢 (Inteligencia de Negocio y Protección de Riesgos)
+*Ideal para: Cadenas, franquicias o corporativos del giro alimenticio buscando extrema protección comercial.*
 - **Funciones incluidas:**
   - Todo lo del plan Pro.
-  - Módulo de **Recursos Humanos y Nómina**.
-  - Simulador de variaciones de costos con proveedores.
-  - Rutas de **Delivery y Repartidores**.
-  - Roles avanzados personalizables.
-- **Límites:** Múltiples Sucursales (+$500 MXN por sucursal extra), Usuarios Ilimitados.
-- **Soporte:** Soporte telefónico 24/7 y Onboarding dedicado.
-- **Precio Sugerido:** **$3,499 a $4,999+ MXN / mes** (Alta retención del cliente).
+  - **Simulador Maestro de Costos:** Proyecciones del impacto en rentabilidad de recetas ante variaciones en el precio de los ingredientes de los proveedores (Carne, complementos, etc).
+  - Integración financiera automática: Desde las ventas brutas diarias directo a los movimientos de nómina y utilidades de la jornada.
+  - Interface optimizada multisucursal.
+- **Límites:** Múltiples Sucursales (+$600 MXN por sucursal extra), usuarios adaptables.
+- **Precio Sugerido:** **$3,999 a $5,999+ MXN / mes**
 
 ---
 
-### Retorno de Inversión (ROI) del Modelo SaaS
-Si inviertes ~$400,000 MXN en el desarrollo del producto y lo ofreces bajo el Plan Pro ($1,500 MXN/mes):
-Necesitarías aproximadamente **23 ventas anuales** ($18,000/año c/u) para recuperar el costo de desarrollo humano original en el primer año. Si captas 100 restaurantes (un hito realista en 2 años con buen marketing), estarías generando ~$150,000 MXN **mensuales** en ingresos recurrentes.
+### Retorno de Inversión Inicial (ROI) bajo el Modelo SaaS
+Teniendo una inversión tecnológica (activo digital propio) equivalente a ~$600,000 MXN, con una estrategia de ventas centrada en el **Plan Pro ($1,899 MXN/mes en promedio)**:
+
+- Se necesitan captar **~26 restaurantes leales bajo planes anuales** para recuperar íntegramente el equivalente al esfuerzo de desarrollo inicial.
+- A mediano plazo, lograr 100 restaurantes activos se traduciría en ingresos recurrentes fiables de **~$190,000 MXN mensuales**, construyendo una "startup" con barreras de entrada reales gracias a sus integraciones predictivas e hiper-específicas que pocos competidores locales dominan.

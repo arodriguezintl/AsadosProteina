@@ -2,6 +2,22 @@ import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { type UserRole } from '@/types/database.types'
 
+const withTimeout = <T>(promise: PromiseLike<T>, ms: number = 8000): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error(`Operation timed out after ${ms}ms`));
+        }, ms);
+    });
+
+    return Promise.race([
+        Promise.resolve(promise),
+        timeoutPromise
+    ]).finally(() => {
+        clearTimeout(timeoutId);
+    });
+}
+
 interface AuthState {
     user: any | null
     role: UserRole | null
@@ -77,7 +93,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     checkSession: async () => {
         try {
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+            // Wrap getSession in a timeout to prevent Brave/Firefox hanging on navigator.locks
+            const { data: { session }, error: sessionError } = await withTimeout(supabase.auth.getSession());
 
             if (sessionError) {
                 console.error('Error fetching session:', sessionError)
@@ -93,11 +110,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // Only set loading to true if we are actually fetching profile data and current user is different or not set?
             // But simplify: just fetch profile.
 
-            const { data: profile, error } = await supabase
-                .from('user_profiles')
-                .select('role, store_id, modules')
-                .eq('id', session.user.id)
-                .single()
+            const { data: profile, error } = await withTimeout(
+                supabase
+                    .from('user_profiles')
+                    .select('role, store_id, modules')
+                    .eq('id', session.user.id)
+                    .single()
+            )
 
             if (error) {
                 console.error('Error fetching user profile:', error)
@@ -109,10 +128,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             // Fallback: If no store assigned, try to get the first available store (Development/Setup helper)
             if (!userStoreId) {
-                const { data: stores } = await supabase
-                    .from('stores')
-                    .select('id')
-                    .limit(1)
+                const { data: stores } = await withTimeout(
+                    supabase
+                        .from('stores')
+                        .select('id')
+                        .limit(1)
+                )
 
                 if (stores && stores.length > 0) {
                     userStoreId = stores[0].id
@@ -130,7 +151,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             })
 
         } catch (error) {
-            console.error('Unexpected error in checkSession:', error)
+            console.error('Unexpected error in checkSession (Timeout or Network):', error)
             set({ user: null, role: null, storeId: null, modules: [], loading: false })
         }
     }
