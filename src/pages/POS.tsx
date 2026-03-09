@@ -3,17 +3,21 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, ShoppingCart, Loader2, Search, Calculator } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Loader2, Search, Calculator, TrendingDown, ImageOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'react-toastify'
 import { ProductService } from '@/services/product.service'
 import { OrderService } from '@/services/order.service'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import type { Product } from '@/types/inventory'
 import type { CreateOrderDTO, CreateOrderItemDTO } from '@/types/sales'
 import type { Customer } from '@/types/customers'
+import type { FinanceCategory } from '@/types/finance'
 import { CustomerService } from '@/services/customer.service'
+import { FinanceService } from '@/services/finance.service'
 import { User } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useTicketPrint } from '@/hooks/useTicketPrint'
@@ -39,14 +43,63 @@ export default function POS() {
     const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup')
     const [showPromoDialog, setShowPromoDialog] = useState(false)
     const [promoExtraItem, setPromoExtraItem] = useState<string>('')
+    // Expense dialog state
+    const [showExpenseDialog, setShowExpenseDialog] = useState(false)
+    const [expenseLoading, setExpenseLoading] = useState(false)
+    const [expenseCategories, setExpenseCategories] = useState<FinanceCategory[]>([])
+    const [expenseForm, setExpenseForm] = useState({
+        amount: 0,
+        description: '',
+        category_id: '',
+        payment_method: 'cash' as 'cash' | 'transfer' | 'card',
+        transaction_date: new Date().toISOString().split('T')[0]
+    })
     const { user, storeId } = useAuthStore()
     const { buildTicketData } = useTicketPrint()
 
     useEffect(() => {
         if (storeId) {
             loadProducts()
+            loadExpenseCategories()
         }
     }, [storeId])
+
+    const loadExpenseCategories = async () => {
+        try {
+            const cats = await FinanceService.getCategories()
+            // Filter to expense categories only
+            setExpenseCategories(cats.filter((c: FinanceCategory) => c.type === 'expense' || !c.type))
+        } catch (error) {
+            console.error('Error loading expense categories:', error)
+        }
+    }
+
+    const handleRegisterExpense = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!storeId) return
+        setExpenseLoading(true)
+        try {
+            await FinanceService.createTransaction({
+                ...expenseForm,
+                type: 'expense',
+                store_id: storeId,
+                amount: Number(expenseForm.amount)
+            })
+            setShowExpenseDialog(false)
+            setExpenseForm({
+                amount: 0,
+                description: '',
+                category_id: '',
+                payment_method: 'cash',
+                transaction_date: new Date().toISOString().split('T')[0]
+            })
+            toast.success('Gasto registrado correctamente')
+        } catch (error: any) {
+            toast.error(error?.message || 'Error al registrar gasto')
+        } finally {
+            setExpenseLoading(false)
+        }
+    }
 
     const loadProducts = async () => {
         if (!storeId) return
@@ -279,6 +332,10 @@ export default function POS() {
                             <p className="text-muted-foreground">Selecciona productos para agregar a la orden</p>
                         </div>
                         <div className="flex items-center gap-4">
+                            <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 bg-white" onClick={() => setShowExpenseDialog(true)}>
+                                <TrendingDown className="h-4 w-4 mr-2" />
+                                Registrar Gasto
+                            </Button>
                             <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50 bg-white" onClick={handleCorteDeCaja}>
                                 <Calculator className="h-4 w-4 mr-2" />
                                 Corte de Caja
@@ -307,9 +364,22 @@ export default function POS() {
                                 {filteredProducts.map(product => (
                                     <Card
                                         key={product.id}
-                                        className="cursor-pointer hover:bg-accent transition-colors"
+                                        className="cursor-pointer hover:bg-accent transition-colors overflow-hidden"
                                         onClick={() => addToCart(product)}
                                     >
+                                        {/* Product Image */}
+                                        <div className="w-full h-28 bg-muted/40 overflow-hidden flex items-center justify-center">
+                                            {product.image_url ? (
+                                                <img
+                                                    src={product.image_url}
+                                                    alt={product.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                />
+                                            ) : (
+                                                <ImageOff className="h-8 w-8 text-muted-foreground/30" />
+                                            )}
+                                        </div>
                                         <CardHeader className="p-3 pb-1">
                                             <CardTitle className="text-sm font-semibold line-clamp-2 leading-tight" title={product.name}>{product.name}</CardTitle>
                                         </CardHeader>
@@ -468,6 +538,88 @@ export default function POS() {
                     </CardFooter>
                 </Card>
             </div>
+
+            {/* Expense Registration Dialog */}
+            <Dialog open={showExpenseDialog} onOpenChange={setShowExpenseDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <TrendingDown className="h-5 w-5 text-red-500" />
+                            Registrar Gasto
+                        </DialogTitle>
+                        <DialogDescription>Registra un gasto operativo</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleRegisterExpense} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Monto ($)</Label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    min="0.01"
+                                    value={expenseForm.amount || ''}
+                                    onChange={e => setExpenseForm({ ...expenseForm, amount: parseFloat(e.target.value) })}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Fecha</Label>
+                                <Input
+                                    type="date"
+                                    required
+                                    value={expenseForm.transaction_date}
+                                    onChange={e => setExpenseForm({ ...expenseForm, transaction_date: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Categoría</Label>
+                            <Select
+                                value={expenseForm.category_id}
+                                onValueChange={v => setExpenseForm({ ...expenseForm, category_id: v })}
+                            >
+                                <SelectTrigger><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger>
+                                <SelectContent>
+                                    {expenseCategories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Método de Pago</Label>
+                            <Select
+                                value={expenseForm.payment_method}
+                                onValueChange={(v: any) => setExpenseForm({ ...expenseForm, payment_method: v })}
+                            >
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="cash">Efectivo</SelectItem>
+                                    <SelectItem value="transfer">Transferencia</SelectItem>
+                                    <SelectItem value="card">Tarjeta</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Descripción</Label>
+                            <Input
+                                required
+                                value={expenseForm.description}
+                                onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                                placeholder="Ej: Compra de gas, Pago de proveedor..."
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setShowExpenseDialog(false)}>Cancelar</Button>
+                            <Button type="submit" variant="destructive" disabled={expenseLoading}>
+                                {expenseLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TrendingDown className="mr-2 h-4 w-4" />}
+                                Registrar Gasto
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* Promo Interception Dialog */}
             <Dialog open={showPromoDialog} onOpenChange={setShowPromoDialog}>
