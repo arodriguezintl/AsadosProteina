@@ -53,15 +53,15 @@ export default function Login() {
                             Proteina
                         </h2>
                     </div>
-                    <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    <p className="mt-4 text-sm text-gray-500 font-medium">
                         Bienvenido de nuevo
                     </p>
                 </div>
 
-                <div className="bg-white dark:bg-[#1E1E1E] rounded-xl shadow-soft p-8 space-y-6 border border-gray-100 dark:border-gray-800">
+                <div className="bg-white rounded-xl shadow-soft p-8 space-y-6 border border-gray-100">
                     <form onSubmit={handleLogin} className="space-y-5">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1" htmlFor="email">
+                            <label className="text-sm font-medium text-gray-700 ml-1" htmlFor="email">
                                 Correo electrónico
                             </label>
                             <div className="relative group">
@@ -69,7 +69,7 @@ export default function Login() {
                                     <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
                                 </div>
                                 <input
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#252525] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
+                                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
                                     id="email"
                                     name="email"
                                     placeholder="nombre@ejemplo.com"
@@ -83,7 +83,7 @@ export default function Login() {
 
                         <div className="space-y-2">
                             <div className="flex justify-between items-center ml-1">
-                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300" htmlFor="password">
+                                <label className="text-sm font-medium text-gray-700" htmlFor="password">
                                     Contraseña
                                 </label>
                             </div>
@@ -92,7 +92,7 @@ export default function Login() {
                                     <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
                                 </div>
                                 <input
-                                    className="block w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-[#252525] text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
+                                    className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
                                     id="password"
                                     name="password"
                                     placeholder="••••••••"
@@ -103,9 +103,9 @@ export default function Login() {
                                 />
                                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
                                     {showPassword ? (
-                                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                                     ) : (
-                                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                                     )}
                                 </div>
                             </div>

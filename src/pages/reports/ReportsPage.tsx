@@ -62,8 +62,14 @@ export default function ReportsPage() {
     const loadReports = async () => {
         setLoading(true)
         try {
-            const start = `${dateRange.start}T00:00:00`
-            const end = `${dateRange.end}T23:59:59`
+            // Fix timezone: ensure user's local day translates exactly to the expected UTC boundaries
+            const [sYear, sMonth, sDay] = dateRange.start.split('-').map(Number)
+            const startDate = new Date(sYear, sMonth - 1, sDay, 0, 0, 0)
+            const start = startDate.toISOString()
+
+            const [eYear, eMonth, eDay] = dateRange.end.split('-').map(Number)
+            const endDate = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999)
+            const end = endDate.toISOString()
 
             // Determine which store to fetch for main stats
             // If Super Admin and 'all', we might want aggregate of all? 

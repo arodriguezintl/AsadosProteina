@@ -152,7 +152,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         } catch (error) {
             console.error('Unexpected error in checkSession (Timeout or Network):', error)
-            set({ user: null, role: null, storeId: null, modules: [], loading: false })
+            const existingUser = get().user;
+            if (existingUser) {
+                // If user was already logged in, keep them logged in during transient errors
+                set({ loading: false })
+            } else {
+                set({ user: null, role: null, storeId: null, modules: [], loading: false })
+            }
         }
     }
 }))

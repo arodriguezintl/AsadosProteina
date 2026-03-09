@@ -32,10 +32,9 @@ export default function Dashboard() {
 
     const loadDashboardData = async () => {
         try {
-            const todayStart = new Date()
-            todayStart.setHours(0, 0, 0, 0)
-            const todayEnd = new Date()
-            todayEnd.setHours(23, 59, 59, 999)
+            const today = new Date()
+            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0)
+            const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
 
             // Parallel data fetching
             const [todaysActivity, activeOrdersList, recentOrders, recentTransactions, newCustomersCount, weeklySales] = await Promise.all([

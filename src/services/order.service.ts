@@ -70,8 +70,8 @@ export const OrderService = {
     },
 
     async getKanbanOrders(storeId: string) {
-        const todayStart = new Date()
-        todayStart.setHours(0, 0, 0, 0)
+        const today = new Date()
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0)
 
         const { data, error } = await supabase
             .from('orders')
@@ -86,7 +86,7 @@ export const OrderService = {
                 customer:customers(full_name)
             `)
             .eq('store_id', storeId)
-            .or(`status.in.(pending,preparing,ready),and(status.eq.completed,created_at.gte.${todayStart.toISOString()})`)
+            .or(`status.in.(pending,preparing,ready),and(status.eq.completed,updated_at.gte.${todayStart.toISOString()})`)
             .order('created_at', { ascending: false })
 
         if (error) throw error
