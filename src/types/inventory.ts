@@ -18,6 +18,7 @@ export interface Product {
     description?: string
     unit_of_measure: string
     min_stock: number
+    max_stock: number
     current_stock: number
     unit_cost: number
     sale_price?: number
@@ -40,6 +41,7 @@ export interface CreateProductDTO {
     description?: string
     unit_of_measure: string
     min_stock: number
+    max_stock?: number
     current_stock?: number
     unit_cost: number
     sale_price?: number

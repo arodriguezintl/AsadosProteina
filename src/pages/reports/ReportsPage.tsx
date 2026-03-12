@@ -7,17 +7,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText } from 'lucide-react'
-import { format, startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth, endOfMonth } from 'date-fns'
 import { exportToExcel, exportToPDF } from '@/utils/export'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { RestockReport } from './RestockReport'
+import { getMexicoDayString, getMexicoStartOfDayISO, getMexicoEndOfDayISO } from '@/utils/date'
 
 import { useAuthStore } from '@/store/auth.store'
 
 export default function ReportsPage() {
     const [loading, setLoading] = useState(true)
     const [dateRange, setDateRange] = useState({
-        start: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-        end: format(endOfMonth(new Date()), 'yyyy-MM-dd')
+        start: getMexicoDayString(startOfMonth(new Date())),
+        end: getMexicoDayString(endOfMonth(new Date()))
     })
 
     const { role, storeId: userStoreId } = useAuthStore()
@@ -63,13 +66,8 @@ export default function ReportsPage() {
         setLoading(true)
         try {
             // Fix timezone: ensure user's local day translates exactly to the expected UTC boundaries
-            const [sYear, sMonth, sDay] = dateRange.start.split('-').map(Number)
-            const startDate = new Date(sYear, sMonth - 1, sDay, 0, 0, 0)
-            const start = startDate.toISOString()
-
-            const [eYear, eMonth, eDay] = dateRange.end.split('-').map(Number)
-            const endDate = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999)
-            const end = endDate.toISOString()
+            const start = getMexicoStartOfDayISO(dateRange.start)
+            const end = getMexicoEndOfDayISO(dateRange.end)
 
             // Determine which store to fetch for main stats
             // If Super Admin and 'all', we might want aggregate of all? 
@@ -168,127 +166,73 @@ export default function ReportsPage() {
                     <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
             ) : (
-                <>
-                    {/* Key Metrics Cards */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
-                                <DollarSign className="h-4 w-4 text-green-600" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-green-600">${salesStats.totalSales.toFixed(2)}</div>
-                                <p className="text-xs text-muted-foreground">En el periodo seleccionado</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Pedidos</CardTitle>
-                                <ShoppingBag className="h-4 w-4 text-blue-600" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{salesStats.totalOrders}</div>
-                                <p className="text-xs text-muted-foreground">Ordenes completadas</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
-                                <TrendingUp className="h-4 w-4 text-orange-600" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">${salesStats.avgTicket.toFixed(2)}</div>
-                                <p className="text-xs text-muted-foreground">Promedio por orden</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Valor Inventario</CardTitle>
-                                <DollarSign className="h-4 w-4 text-purple-600" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-purple-600">${valuation.totalValuation.toFixed(2)}</div>
-                                <p className="text-xs text-muted-foreground">Costo actual almacenado</p>
-                            </CardContent>
-                        </Card>
-                    </div>
+                <Tabs defaultValue="overview" className="space-y-4">
+                    <TabsList className="bg-white border text-gray-500">
+                        <TabsTrigger value="overview" className="data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">Resumen Ventas</TabsTrigger>
+                        <TabsTrigger value="restock" className="data-[state=active]:bg-orange-50 data-[state=active]:text-orange-700">Reabastecimiento y OC</TabsTrigger>
+                    </TabsList>
 
-                    {/* Stores Comparison Table (Super Admin Only) */}
-                    {isSuperAdmin && selectedStoreId === 'all' && storeComparison.length > 0 && (
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <CardTitle className="flex items-center gap-2">
-                                    <StoreIcon className="h-5 w-5" />
-                                    Ventas por Tienda
-                                </CardTitle>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        className="h-12 w-12 rounded-xl border-green-200 bg-white shadow-sm hover:bg-green-50 hover:border-green-300 transition-all p-0 flex items-center justify-center"
-                                        title="Exportar a Excel"
-                                        onClick={() => exportToExcel(
-                                            storeComparison.map(s => ({ Tienda: s.name, Pedidos: s.totalOrders, "Ventas Totales": s.totalSales, "Ticket Promedio": s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0 })),
-                                            `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
-                                        )}
-                                    >
-                                        <FileSpreadsheet className="w-6 h-6 text-green-500" />
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
-                                        title="Exportar a PDF"
-                                        onClick={() => exportToPDF(
-                                            'Ventas por Tienda',
-                                            ['Tienda', 'Pedidos', 'Ventas Totales ($)', 'Ticket Promedio ($)'],
-                                            storeComparison.map(s => [s.name, s.totalOrders, s.totalSales.toFixed(2), (s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0).toFixed(2)]),
-                                            `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
-                                        )}
-                                    >
-                                        <FileText className="w-6 h-6 text-red-500" />
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Tienda</TableHead>
-                                            <TableHead className="text-right">Pedidos</TableHead>
-                                            <TableHead className="text-right">Ventas Totales</TableHead>
-                                            <TableHead className="text-right">Ticket Promedio</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {storeComparison.map((store) => (
-                                            <TableRow key={store.id}>
-                                                <TableCell className="font-medium">{store.name}</TableCell>
-                                                <TableCell className="text-right">{store.totalOrders}</TableCell>
-                                                <TableCell className="text-right font-bold text-green-600">${store.totalSales.toFixed(2)}</TableCell>
-                                                <TableCell className="text-right">${(store.totalOrders > 0 ? store.totalSales / store.totalOrders : 0).toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <TabsContent value="overview" className="space-y-4">
+                        {/* Key Metrics Cards */}
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
+                                    <DollarSign className="h-4 w-4 text-green-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-green-600">${salesStats.totalSales.toFixed(2)}</div>
+                                    <p className="text-xs text-muted-foreground">En el periodo seleccionado</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Pedidos</CardTitle>
+                                    <ShoppingBag className="h-4 w-4 text-blue-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">{salesStats.totalOrders}</div>
+                                    <p className="text-xs text-muted-foreground">Ordenes completadas</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
+                                    <TrendingUp className="h-4 w-4 text-orange-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold">${salesStats.avgTicket.toFixed(2)}</div>
+                                    <p className="text-xs text-muted-foreground">Promedio por orden</p>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <CardTitle className="text-sm font-medium">Valor Inventario</CardTitle>
+                                    <DollarSign className="h-4 w-4 text-purple-600" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-2xl font-bold text-purple-600">${valuation.totalValuation.toFixed(2)}</div>
+                                    <p className="text-xs text-muted-foreground">Costo actual almacenado</p>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                    {/* Detailed Store View */}
-                    {selectedStoreId !== 'all' && (
-                        <div className="grid gap-4 md:grid-cols-2">
-                            {/* Top Products */}
-                            <Card className="col-span-1">
+                        {/* Stores Comparison Table (Super Admin Only) */}
+                        {isSuperAdmin && selectedStoreId === 'all' && storeComparison.length > 0 && (
+                            <Card>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle>Productos Más Vendidos</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <StoreIcon className="h-5 w-5" />
+                                        Ventas por Tienda
+                                    </CardTitle>
                                     <div className="flex gap-2">
                                         <Button
                                             variant="outline"
                                             className="h-12 w-12 rounded-xl border-green-200 bg-white shadow-sm hover:bg-green-50 hover:border-green-300 transition-all p-0 flex items-center justify-center"
-                                            disabled={topProducts.length === 0}
                                             title="Exportar a Excel"
                                             onClick={() => exportToExcel(
-                                                topProducts.map(p => ({ Producto: p.name, Cantidad: p.quantity, "Total Venta": p.revenue })),
-                                                `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
+                                                storeComparison.map(s => ({ Tienda: s.name, Pedidos: s.totalOrders, "Ventas Totales": s.totalSales, "Ticket Promedio": s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0 })),
+                                                `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
                                             )}
                                         >
                                             <FileSpreadsheet className="w-6 h-6 text-green-500" />
@@ -296,13 +240,12 @@ export default function ReportsPage() {
                                         <Button
                                             variant="outline"
                                             className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
-                                            disabled={topProducts.length === 0}
                                             title="Exportar a PDF"
                                             onClick={() => exportToPDF(
-                                                'Reporte de Ventas por Producto',
-                                                ['Producto', 'Cantidad', 'Venta Total ($)'],
-                                                topProducts.map(p => [p.name, p.quantity, p.revenue.toFixed(2)]),
-                                                `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
+                                                'Ventas por Tienda',
+                                                ['Tienda', 'Pedidos', 'Ventas Totales ($)', 'Ticket Promedio ($)'],
+                                                storeComparison.map(s => [s.name, s.totalOrders, s.totalSales.toFixed(2), (s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0).toFixed(2)]),
+                                                `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
                                             )}
                                         >
                                             <FileText className="w-6 h-6 text-red-500" />
@@ -310,57 +253,123 @@ export default function ReportsPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    {topProducts.length === 0 ? (
-                                        <p className="text-center text-muted-foreground py-4">No hay datos de ventas</p>
-                                    ) : (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Producto</TableHead>
-                                                    <TableHead className="text-right">Cant.</TableHead>
-                                                    <TableHead className="text-right">Venta</TableHead>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Tienda</TableHead>
+                                                <TableHead className="text-right">Pedidos</TableHead>
+                                                <TableHead className="text-right">Ventas Totales</TableHead>
+                                                <TableHead className="text-right">Ticket Promedio</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {storeComparison.map((store) => (
+                                                <TableRow key={store.id}>
+                                                    <TableCell className="font-medium">{store.name}</TableCell>
+                                                    <TableCell className="text-right">{store.totalOrders}</TableCell>
+                                                    <TableCell className="text-right font-bold text-green-600">${store.totalSales.toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">${(store.totalOrders > 0 ? store.totalSales / store.totalOrders : 0).toFixed(2)}</TableCell>
                                                 </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {topProducts.map((product, idx) => (
-                                                    <TableRow key={idx}>
-                                                        <TableCell className="font-medium">{product.name}</TableCell>
-                                                        <TableCell className="text-right">{product.quantity}</TableCell>
-                                                        <TableCell className="text-right">${product.revenue.toFixed(2)}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    )}
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 </CardContent>
                             </Card>
+                        )}
 
-                            {/* Recent Activity or Chart Placeholder */}
-                            <Card className="col-span-1">
-                                <CardHeader>
-                                    <CardTitle>Resumen por Producto</CardTitle>
-                                </CardHeader>
-                                <CardContent className="h-[300px] flex items-center justify-center border-dashed border-2 rounded-md bg-muted/20">
-                                    {topProducts.length === 0 ? (
-                                        <p className="text-muted-foreground">Sin datos suficientes</p>
-                                    ) : (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={topProducts} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                                <Tooltip
-                                                    formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Venta Total']}
-                                                    labelFormatter={(label) => `Producto: ${label}`}
-                                                />
-                                                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
-                </>
+                        {/* Detailed Store View */}
+                        {selectedStoreId !== 'all' && (
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {/* Top Products */}
+                                <Card className="col-span-1">
+                                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                        <CardTitle>Productos Más Vendidos</CardTitle>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                className="h-12 w-12 rounded-xl border-green-200 bg-white shadow-sm hover:bg-green-50 hover:border-green-300 transition-all p-0 flex items-center justify-center"
+                                                disabled={topProducts.length === 0}
+                                                title="Exportar a Excel"
+                                                onClick={() => exportToExcel(
+                                                    topProducts.map(p => ({ Producto: p.name, Cantidad: p.quantity, "Total Venta": p.revenue })),
+                                                    `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
+                                                )}
+                                            >
+                                                <FileSpreadsheet className="w-6 h-6 text-green-500" />
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
+                                                disabled={topProducts.length === 0}
+                                                title="Exportar a PDF"
+                                                onClick={() => exportToPDF(
+                                                    'Reporte de Ventas por Producto',
+                                                    ['Producto', 'Cantidad', 'Venta Total ($)'],
+                                                    topProducts.map(p => [p.name, p.quantity, p.revenue.toFixed(2)]),
+                                                    `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
+                                                )}
+                                            >
+                                                <FileText className="w-6 h-6 text-red-500" />
+                                            </Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {topProducts.length === 0 ? (
+                                            <p className="text-center text-muted-foreground py-4">No hay datos de ventas</p>
+                                        ) : (
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Producto</TableHead>
+                                                        <TableHead className="text-right">Cant.</TableHead>
+                                                        <TableHead className="text-right">Venta</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {topProducts.map((product, idx) => (
+                                                        <TableRow key={idx}>
+                                                            <TableCell className="font-medium">{product.name}</TableCell>
+                                                            <TableCell className="text-right">{product.quantity}</TableCell>
+                                                            <TableCell className="text-right">${product.revenue.toFixed(2)}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
+                                {/* Recent Activity or Chart Placeholder */}
+                                <Card className="col-span-1">
+                                    <CardHeader>
+                                        <CardTitle>Resumen por Producto</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="h-[300px] flex items-center justify-center border-dashed border-2 rounded-md bg-muted/20">
+                                        {topProducts.length === 0 ? (
+                                            <p className="text-muted-foreground">Sin datos suficientes</p>
+                                        ) : (
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={topProducts} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                                                    <Tooltip
+                                                        formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Venta Total']}
+                                                        labelFormatter={(label) => `Producto: ${label}`}
+                                                    />
+                                                    <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="restock" className="space-y-4 mt-6">
+                        <RestockReport />
+                    </TabsContent>
+                </Tabs>
             )}
         </div>
     )

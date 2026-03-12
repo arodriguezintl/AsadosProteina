@@ -113,7 +113,32 @@ export default function OrdersPage() {
         if (!storeId) return
         try {
             const data = await OrderService.getKanbanOrders(storeId)
-            setOrders(data)
+            
+            // Auto update pending/preparing/ready to completed if older than 20 mins
+            const now = new Date().getTime()
+            let hasAutoCompleted = false
+            
+            for (const order of data) {
+                if (order.status !== 'completed' && order.status !== 'cancelled') {
+                    const orderTime = new Date(order.created_at).getTime()
+                    const diffMins = (now - orderTime) / (1000 * 60)
+                    if (diffMins >= 20) {
+                        try {
+                            await OrderService.updateStatus(order.id, 'completed')
+                            hasAutoCompleted = true
+                        } catch(e) {
+                            console.error('auto-complete error', e)
+                        }
+                    }
+                }
+            }
+
+            if (hasAutoCompleted) {
+                const refreshedData = await OrderService.getKanbanOrders(storeId)
+                setOrders(refreshedData)
+            } else {
+                setOrders(data)
+            }
         } catch (error) {
             console.error('Error loading orders:', error)
         } finally {

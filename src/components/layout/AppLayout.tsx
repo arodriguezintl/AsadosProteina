@@ -1,12 +1,16 @@
 import { useAuthStore } from "@/store/auth.store"
 import { hasModuleAccess } from "@/config/permissions"
-import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store, Pin, PinOff } from "lucide-react"
+import { LogOut, User, ChevronUp, LayoutDashboard, Calculator, Package, List, Wallet, PieChart, ChefHat, ClipboardList, Users, BarChart3, UserCog, ArrowLeftRight, Settings, Store, Pin, PinOff, Truck } from "lucide-react"
 import { Outlet, Link, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import logoImage from "@/assets/logo.jpg"
+import { useLowStockAlert } from "@/hooks/useLowStockAlert"
+import { LowStockAlertModal } from "@/components/purchase-orders/LowStockAlertModal"
+import { CreatePOModal } from "@/components/purchase-orders/CreatePOModal"
+import type { LowStockProduct } from '@/types/suppliers'
 
 const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false, isExpanded = true }: { to: string, icon: any, label: string, exact?: boolean, prefix?: boolean, isExpanded?: boolean }) => {
     const location = useLocation()
@@ -39,6 +43,10 @@ export function AppLayout() {
     const [storeName, setStoreName] = useState<string>('')
     const [isPinned, setIsPinned] = useState(true)
     const [isHovered, setIsHovered] = useState(false)
+
+    // Alerta de stock bajo
+    const stockAlert = useLowStockAlert()
+    const [poProducts, setPoProducts] = useState<LowStockProduct[] | null>(null)
 
     const isExpanded = isPinned || isHovered
 
@@ -130,6 +138,7 @@ export function AppLayout() {
                                 <>
                                     <NavItem to="/inventory/stock" icon={Package} label="Inventario" prefix isExpanded={isExpanded} />
                                     <NavItem to="/inventory/menu" icon={List} label="Productos Venta" prefix isExpanded={isExpanded} />
+                                    <NavItem to="/inventory/suppliers" icon={Truck} label="Proveedores" prefix isExpanded={isExpanded} />
                                     <NavItem to="/inventory/categories" icon={Settings} label="Categorías" isExpanded={isExpanded} />
                                 </>
                             )}
@@ -205,6 +214,29 @@ export function AppLayout() {
                     <Outlet />
                 </div>
             </main>
+
+            {/* Modales globales */}
+            {stockAlert.isOpen && (
+                <LowStockAlertModal
+                    products={stockAlert.lowStockProducts}
+                    onClose={stockAlert.dismiss}
+                    onCreatePO={(products) => {
+                        stockAlert.dismiss()
+                        setPoProducts(products)
+                    }}
+                />
+            )}
+
+            {poProducts && (
+                <CreatePOModal
+                    preselectedProducts={poProducts}
+                    onClose={() => setPoProducts(null)}
+                    onCreated={() => {
+                        setPoProducts(null)
+                        stockAlert.refresh()
+                    }}
+                />
+            )}
         </div>
     )
 }

@@ -7,6 +7,7 @@ import { Plus, Minus, ShoppingCart, Loader2, Search, Calculator, TrendingDown, I
 import { Input } from '@/components/ui/input'
 import { toast } from 'react-toastify'
 import { ProductService } from '@/services/product.service'
+import { ReportService } from '@/services/report.service'
 import { OrderService } from '@/services/order.service'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -24,6 +25,7 @@ import { useTicketPrint } from '@/hooks/useTicketPrint'
 import { PrintService } from '@/services/print.service'
 import { HRService } from '@/services/hr.service'
 import { supabase } from '@/lib/supabase'
+import { getMexicoDayString, getMexicoStartOfDayISO } from '@/utils/date'
 
 interface CartItem {
     product: Product
@@ -41,6 +43,9 @@ export default function POS() {
     const [customersList, setCustomersList] = useState<Customer[]>([])
     const [showCustomerSearch, setShowCustomerSearch] = useState(false)
     const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup')
+    const [selectedCategory, setSelectedCategory] = useState<string>('all')
+    const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all')
+    const [posCategories, setPosCategories] = useState<string[]>([])
     const [showPromoDialog, setShowPromoDialog] = useState(false)
     const [promoExtraItem, setPromoExtraItem] = useState<string>('')
     // Expense dialog state
@@ -52,7 +57,7 @@ export default function POS() {
         description: '',
         category_id: '',
         payment_method: 'cash' as 'cash' | 'transfer' | 'card',
-        transaction_date: new Date().toISOString().split('T')[0]
+        transaction_date: getMexicoDayString()
     })
     const { user, storeId } = useAuthStore()
     const { buildTicketData } = useTicketPrint()
@@ -91,7 +96,7 @@ export default function POS() {
                 description: '',
                 category_id: '',
                 payment_method: 'cash',
-                transaction_date: new Date().toISOString().split('T')[0]
+                transaction_date: getMexicoDayString()
             })
             toast.success('Gasto registrado correctamente')
         } catch (error: any) {
@@ -105,8 +110,41 @@ export default function POS() {
         if (!storeId) return
         try {
             const data = await ProductService.getProducts(storeId)
-            // Filter inactive or invalid price products
-            setProducts(data.filter(p => p.is_active && (p.sale_price || 0) > 0))
+            // Filter inactive, invalid price, and only keep finished products
+            let validProducts = data.filter(p => 
+                p.is_active && 
+                (p.sale_price || 0) > 0 && 
+                p.category?.type === 'finished_product'
+            )
+            
+            // Sort by popularity across the last 30 days
+            try {
+                const startDateISO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+                const endDateISO = new Date().toISOString()
+                const topProducts = await ReportService.getTopProducts(storeId, startDateISO, endDateISO, 100)
+                const popularityMap = new Map()
+                // Map by product name
+                topProducts.forEach((tp, idx) => {
+                    popularityMap.set(tp.name, idx)
+                })
+                
+                validProducts.sort((a, b) => {
+                    const rankA = popularityMap.has(a.name) ? popularityMap.get(a.name)! : 999
+                    const rankB = popularityMap.has(b.name) ? popularityMap.get(b.name)! : 999
+                    if (rankA !== rankB) return rankA - rankB
+                    return (a.name || '').localeCompare(b.name || '')
+                })
+            } catch (e) {
+                console.error('Could not fetch top products for sorting', e)
+                validProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            }
+
+            setProducts(validProducts)
+            
+            // Extract unique categories for POS tabs
+            const cats = Array.from(new Set(validProducts.map(p => p.category?.name).filter(Boolean))) as string[]
+            setPosCategories(cats)
+            
         } catch (error) {
             console.error('Error loading products:', error)
         } finally {
@@ -127,10 +165,22 @@ export default function POS() {
         }
     }
 
-    const filteredProducts = products.filter(p =>
-        (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesCategory = selectedCategory === 'all' || p.category?.name === selectedCategory
+        
+        // Sub-category logic for Asados
+        let matchesSubCategory = true
+        if (selectedCategory === 'Asados' && selectedSubCategory !== 'all') {
+            const n = (p.name || '').toLowerCase()
+            if (selectedSubCategory === 'con arroz') matchesSubCategory = n.includes('arroz')
+            else if (selectedSubCategory === 'con espagueti') matchesSubCategory = n.includes('espagueti') || n.includes('spaghetti')
+            else if (selectedSubCategory === 'otros') matchesSubCategory = !n.includes('arroz') && !n.includes('espagueti') && !n.includes('spaghetti')
+        }
+
+        return matchesSearch && matchesCategory && matchesSubCategory
+    })
 
     const addToCart = (product: Product) => {
         setCart(current => {
@@ -274,23 +324,25 @@ export default function POS() {
             }
 
             const activeShift = await HRService.getActiveShift(employee.id)
-            if (!activeShift) {
-                toast.error('No tienes un turno activo actualmente. Haz "Check-In" en Recursos Humanos.')
-                return
-            }
 
-            if (confirm('¿Deseas realizar el Corte de Caja y cerrar tu turno actual?')) {
+            if (confirm('¿Deseas realizar el Corte de Caja?')) {
+                const startDate = activeShift 
+                                     ? activeShift.check_in 
+                                     : getMexicoStartOfDayISO(getMexicoDayString());
+
                 const { data: orders } = await supabase
                     .from('orders')
                     .select('id, total, status')
                     .eq('store_id', storeId)
-                    .gte('created_at', activeShift.check_in)
+                    .gte('created_at', startDate)
 
                 const validOrders = orders?.filter(o => o.status !== 'cancelled') || []
                 const totalSales = validOrders.reduce((sum, o) => sum + (o.total || 0), 0)
                 const trxCount = validOrders.length
 
-                await HRService.clockOut(employee.id, `Corte de Caja automático. Ventas: $${totalSales} (${trxCount} transacciones).`)
+                if (activeShift) {
+                    await HRService.clockOut(employee.id, `Corte de Caja automático. Ventas: $${totalSales} (${trxCount} transacciones).`)
+                }
 
                 const printData: any = {
                     businessName: "ASADOS PROTEINA",
@@ -310,7 +362,7 @@ export default function POS() {
                 }
                 PrintService.printTicket(printData)
 
-                toast.success('Corte de caja exitoso y turno cerrado.')
+                toast.success('Corte de caja exitoso' + (activeShift ? ' y turno cerrado.' : '.'))
             }
 
         } catch (error) {
@@ -353,6 +405,65 @@ export default function POS() {
                             </div>
                         </div>
                     </div>
+
+                    <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                        <Button
+                            variant={selectedCategory === 'all' ? 'default' : 'secondary'}
+                            size="sm"
+                            onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all') }}
+                            className="whitespace-nowrap rounded-full"
+                        >
+                            Todos
+                        </Button>
+                        {posCategories.map(cat => (
+                            <Button
+                                key={cat}
+                                variant={selectedCategory === cat ? 'default' : 'secondary'}
+                                size="sm"
+                                onClick={() => { setSelectedCategory(cat); setSelectedSubCategory('all') }}
+                                className="whitespace-nowrap rounded-full"
+                            >
+                                {cat}
+                            </Button>
+                        ))}
+                    </div>
+
+                    {selectedCategory === 'Asados' && (
+                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                            <Button
+                                variant={selectedSubCategory === 'all' ? 'default' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSelectedSubCategory('all')}
+                                className="whitespace-nowrap rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200"
+                            >
+                                Todos los Asados
+                            </Button>
+                            <Button
+                                variant={selectedSubCategory === 'con arroz' ? 'default' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSelectedSubCategory('con arroz')}
+                                className="whitespace-nowrap rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200"
+                            >
+                                Con Arroz
+                            </Button>
+                            <Button
+                                variant={selectedSubCategory === 'con espagueti' ? 'default' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSelectedSubCategory('con espagueti')}
+                                className="whitespace-nowrap rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200"
+                            >
+                                Con Espagueti
+                            </Button>
+                            <Button
+                                variant={selectedSubCategory === 'otros' ? 'default' : 'secondary'}
+                                size="sm"
+                                onClick={() => setSelectedSubCategory('otros')}
+                                className="whitespace-nowrap rounded-full bg-orange-100 text-orange-800 hover:bg-orange-200"
+                            >
+                                Otros
+                            </Button>
+                        </div>
+                    )}
 
                     <ScrollArea className="flex-1 pr-4">
                         {loading ? (

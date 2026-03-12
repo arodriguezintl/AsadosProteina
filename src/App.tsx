@@ -4,6 +4,7 @@ import Dashboard from '@/pages/Dashboard'
 import POS from '@/pages/POS'
 import ProductsPage from '@/pages/inventory/ProductsPage'
 import ProductForm from '@/pages/inventory/ProductForm'
+import SuppliersPage from '@/pages/inventory/SuppliersPage'
 import CategoriesPage from '@/pages/inventory/CategoriesPage'
 import FinanceCategoriesPage from '@/pages/finance/FinanceCategoriesPage'
 import FinanceDashboard from '@/pages/finance/FinanceDashboard'
@@ -129,6 +130,7 @@ function App() {
           <Route path="/inventory/menu" element={<ProductsPage viewMode="menu" />} />
           <Route path="/inventory/products/new" element={<ProductForm />} />
           <Route path="/inventory/products/:id" element={<ProductForm />} />
+          <Route path="/inventory/suppliers" element={<SuppliersPage />} />
           <Route path="/inventory/categories" element={<CategoriesPage />} />
           <Route path="/finance/categories" element={<FinanceCategoriesPage />} />
           <Route path="/finance/transactions" element={<TransactionsPage />} />

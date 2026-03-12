@@ -42,8 +42,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
     },
     admin: {
         dashboard: ['view', 'create', 'edit', 'delete'],
-        pos: [],
-        orders: [],
+        pos: ['view', 'create', 'edit', 'delete'],
+        orders: ['view', 'create', 'edit', 'delete'],
         inventory: ['view', 'create', 'edit', 'delete'],
         recipes: ['view', 'create', 'edit', 'delete'],
         finance: ['view', 'create', 'edit', 'delete'],

@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, Plus, Search, TrendingUp, TrendingDown, Filter } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { getMexicoDayString, parseMexicoDateToLocal } from '@/utils/date'
 import { useAuthStore } from '@/store/auth.store'
 
 export default function TransactionsPage() {
@@ -27,7 +28,7 @@ export default function TransactionsPage() {
         description: '',
         category_id: '',
         payment_method: 'cash' as 'cash' | 'transfer' | 'card',
-        transaction_date: new Date().toISOString().split('T')[0]
+        transaction_date: getMexicoDayString()
     })
 
     const { storeId } = useAuthStore()
@@ -76,7 +77,7 @@ export default function TransactionsPage() {
                 description: '',
                 category_id: '',
                 payment_method: 'cash',
-                transaction_date: new Date().toISOString().split('T')[0]
+                transaction_date: getMexicoDayString()
             })
             loadData()
         } catch (error: any) {
@@ -297,7 +298,7 @@ export default function TransactionsPage() {
                                 filteredTransactions.map(trans => (
                                     <TableRow key={trans.id}>
                                         <TableCell className="font-medium">
-                                            {format(new Date(trans.transaction_date), 'dd MMM yyyy', { locale: es })}
+                                            {format(parseMexicoDateToLocal(trans.transaction_date), 'dd MMM yyyy', { locale: es })}
                                         </TableCell>
                                         <TableCell>{trans.description}</TableCell>
                                         <TableCell>
