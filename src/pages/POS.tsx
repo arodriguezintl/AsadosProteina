@@ -378,21 +378,23 @@ export default function POS() {
             <div className="flex h-[calc(100vh-4rem)] gap-4">
 
                 <div className="flex-1 overflow-hidden flex flex-col">
-                    <div className="mb-4 flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold">Punto de Venta</h1>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+                        <div className="min-w-fit">
+                            <h1 className="text-2xl font-bold whitespace-nowrap">Punto de Venta</h1>
                             <p className="text-muted-foreground">Selecciona productos para agregar a la orden</p>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-1 flex-wrap items-center justify-start md:justify-end gap-3 md:gap-4 min-w-[300px]">
                             <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 bg-white" onClick={() => setShowExpenseDialog(true)}>
                                 <TrendingDown className="h-4 w-4 mr-2" />
-                                Registrar Gasto
+                                <span className="hidden sm:inline">Registrar Gasto</span>
+                                <span className="sm:hidden">Gasto</span>
                             </Button>
                             <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50 bg-white" onClick={handleCorteDeCaja}>
                                 <Calculator className="h-4 w-4 mr-2" />
-                                Corte de Caja
+                                <span className="hidden sm:inline">Corte de Caja</span>
+                                <span className="sm:hidden">Corte</span>
                             </Button>
-                            <div className="w-[300px]">
+                            <div className="flex-1 min-w-[200px] md:max-w-[300px]">
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
