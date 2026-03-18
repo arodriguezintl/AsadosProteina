@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        @media print {
+            .no-print { display: none; }
+            body { background-color: white !important; }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-[1000px] mx-auto bg-white dark:bg-slate-900 shadow-xl my-8 min-h-[1123px] flex flex-col">
+<!-- Top Navigation / Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-10 py-8">
+<div class="flex items-center gap-4">
+<div class="size-12 overflow-hidden rounded-lg flex items-center justify-center bg-primary/10">
+<img alt="Asados Proteina Company Logo" class="w-full h-full object-contain" data-alt="Corporate logo for Asados Proteina restaurant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0VTSFA_a1-AMOYTksFoWbHKQS010iPpbqAazdVLbQdXYIv47-esOIR3Rm1_WWHQ42kX8f-XbpQL20jTZ7Fmbq8uOlmryEYUGekylM84C6hZ7IpRhEJGy1FiigIncKXHEGZTIcSkVCYSGPN74J_NCR5Lc9aWJeNcPErKIVcM3JsJ0u7XrH6bKEU1z_qgolOut6lD8WPMnjtR54D_ad9mU72RE3p5EO0y1XhFKlLGQdUeQKEa2f8GW_Ey5N0WpdtA5xhh8AavEv05U"/>
+</div>
+<div>
+<h1 class="text-primary text-2xl font-black uppercase tracking-tight">Asados Proteína</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Financial Operations Department</p>
+</div>
+</div>
+<div class="text-right">
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold">Transactions Report</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Ref: #REP-2023-10-24</p>
+</div>
+</header>
+<main class="p-10 flex-grow">
+<!-- Report Title & Date -->
+<div class="flex flex-wrap justify-between items-end gap-3 mb-8">
+<div class="flex flex-col gap-1">
+<p class="text-slate-900 dark:text-slate-100 text-4xl font-black leading-tight tracking-tight">Transactions Report Format</p>
+<div class="flex items-center gap-2 text-primary font-medium">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<p class="text-sm">Generated on October 24, 2023</p>
+</div>
+</div>
+<div class="flex gap-2 no-print">
+<button class="bg-primary text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm hover:opacity-90">
+<span class="material-symbols-outlined text-sm">download</span>
+                        Export PDF
+                    </button>
+<button class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm hover:bg-slate-300">
+<span class="material-symbols-outlined text-sm">print</span>
+                        Print
+                    </button>
+</div>
+</div>
+<!-- Financial Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+<div class="flex flex-col gap-2 rounded-xl p-6 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Income</p>
+<span class="material-symbols-outlined text-green-500">trending_up</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">$4,500.00</p>
+<div class="flex items-center gap-1">
+<span class="text-green-600 dark:text-green-400 text-xs font-bold">+12.5%</span>
+<span class="text-slate-400 text-[10px]">vs last month</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+<div class="flex justify-between items-start">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Expenses</p>
+<span class="material-symbols-outlined text-red-500">trending_down</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">$2,100.00</p>
+<div class="flex items-center gap-1">
+<span class="text-red-600 dark:text-red-400 text-xs font-bold">+5.2%</span>
+<span class="text-slate-400 text-[10px]">vs last month</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 border border-primary/10 bg-primary/5">
+<div class="flex justify-between items-start">
+<p class="text-primary text-xs font-bold uppercase tracking-wider">Net Balance</p>
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+</div>
+<p class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">$2,400.00</p>
+<div class="flex items-center gap-1">
+<span class="text-slate-500 dark:text-slate-400 text-xs font-medium">Monthly Surplus</span>
+</div>
+</div>
+</div>
+<!-- Transaction Table -->
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-100 dark:bg-slate-800">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Transaction ID</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Description</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Category</th>
+<th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Zebra striping handled by CSS classes -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">#TXN-001</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">2023-10-01</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Supply Purchase - Beef Bulk</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Expense</span>
+</td>
+<td class="px-6 py-4 text-right text-sm font-bold text-red-600">-$150.00</td>
+</tr>
+<tr class="bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">#TXN-002</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">2023-10-02</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Catering Service - Corporate Event</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Income</span>
+</td>
+<td class="px-6 py-4 text-right text-sm font-bold text-green-600">+$1,200.00</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">#TXN-003</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">2023-10-03</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Utility Bill - Electricity</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Expense</span>
+</td>
+<td class="px-6 py-4 text-right text-sm font-bold text-red-600">-$85.00</td>
+</tr>
+<tr class="bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">#TXN-004</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">2023-10-04</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Daily Sales - Weekend Brunch</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Income</span>
+</td>
+<td class="px-6 py-4 text-right text-sm font-bold text-green-600">+$450.00</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">#TXN-005</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">2023-10-05</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Equipment Maintenance - Grill</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Expense</span>
+</td>
+<td class="px-6 py-4 text-right text-sm font-bold text-red-600">-$200.00</td>
+</tr>
+<tr class="bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">#TXN-006</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">2023-10-06</td>
+<td class="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">Beverage Restock - Soft Drinks</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Expense</span>
+</td>
+<td class="px-6 py-4 text-right text-sm font-bold text-red-600">-$320.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Additional Details -->
+<div class="grid grid-cols-2 gap-8 border-t border-slate-200 dark:border-slate-800 pt-8">
+<div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Report Parameters</h3>
+<div class="space-y-3">
+<div class="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+<span class="text-sm text-slate-500">Report Period</span>
+<span class="text-sm font-semibold">Oct 1 - Oct 31, 2023</span>
+</div>
+<div class="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+<span class="text-sm text-slate-500">Currency</span>
+<span class="text-sm font-semibold">USD ($)</span>
+</div>
+<div class="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+<span class="text-sm text-slate-500">Status</span>
+<span class="text-sm font-semibold text-green-600">Reconciled</span>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Metadata</h3>
+<div class="space-y-3">
+<div class="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+<span class="text-sm text-slate-500">Generated By</span>
+<span class="text-sm font-semibold">Finance System Auto-Gen</span>
+</div>
+<div class="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+<span class="text-sm text-slate-500">Approval Stage</span>
+<span class="text-sm font-semibold">Level 2 - Final</span>
+</div>
+<div class="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+<span class="text-sm text-slate-500">Print Date</span>
+<span class="text-sm font-semibold">Oct 24, 2023 14:35</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-900 text-white p-10 flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="text-center md:text-left">
+<p class="text-sm font-bold">Asados Proteína S.A.</p>
+<p class="text-xs text-slate-400">123 Culinary Avenue, Food District</p>
+<p class="text-xs text-slate-400">www.asadosproteina.com | +1 (555) 012-3456</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right hidden md:block">
+<p class="text-[10px] text-slate-500 uppercase font-bold">Document Authentication</p>
+<p class="text-xs font-mono">HASH: 8a7f2b1c9d0e3f4a</p>
+</div>
+<div class="size-16 bg-white p-1 rounded">
+<div class="w-full h-full bg-slate-200 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-400">qr_code_2</span>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<!-- Floating Action Button for View Mode Toggle (Dark/Light) -->
+<div class="fixed bottom-6 right-6 no-print">
+<button class="bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-4 rounded-full shadow-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:scale-110 transition-transform" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-symbols-outlined">contrast</span>
+</button>
+</div>
+</body></html>

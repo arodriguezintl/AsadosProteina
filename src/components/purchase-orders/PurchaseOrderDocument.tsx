@@ -3,204 +3,312 @@ import type { PurchaseOrder } from '@/types/suppliers'
 
 const styles = StyleSheet.create({
     page: {
-        padding: 40,
+        padding: 0,
         fontSize: 10,
         fontFamily: 'Helvetica',
-        color: '#1a1a1a',
+        color: '#1e293b', // slate-800
+        backgroundColor: '#f8f6f6', // background-light
+    },
+    container: {
+        margin: 30,
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        border: '1px solid #e2e8f0',
+        overflow: 'hidden',
     },
     // Header
     header: {
+        padding: 30,
+        borderBottom: '4px solid #ec5b13', // primary
+        backgroundColor: '#ffffff',
+    },
+    headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 32,
-        paddingBottom: 16,
-        borderBottom: '2px solid #e85d04',
+        marginBottom: 30,
     },
-    brandBlock: {
-        flex: 1,
+    logoBlock: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    logoPlaceholder: {
+        width: 60,
+        height: 60,
+        backgroundColor: '#f1f5f9',
+        borderRadius: 8,
+    },
+    brandInfo: {
+        marginLeft: 12,
+        borderLeft: '1px solid #e2e8f0',
+        paddingLeft: 12,
     },
     brandName: {
         fontSize: 20,
-        fontFamily: 'Helvetica-Bold',
-        color: '#e85d04',
-        marginBottom: 2,
+        fontWeight: 'bold',
+        color: '#0f172a',
+        textTransform: 'uppercase',
     },
-    brandSub: {
-        fontSize: 9,
-        color: '#666',
+    brandNit: {
+        fontSize: 8,
+        color: '#64748b',
+        marginTop: 2,
     },
-    folioBlock: {
+    headerRight: {
         alignItems: 'flex-end',
     },
+    title: {
+        fontSize: 24,
+        fontWeight: 'extrabold',
+        color: '#ec5b13',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+    },
+    folioCard: {
+        backgroundColor: '#f8fafc',
+        padding: 12,
+        borderRadius: 8,
+        border: '1px solid #f1f5f9',
+        minWidth: 160,
+    },
+    folioRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
     folioLabel: {
-        fontSize: 9,
-        color: '#666',
-        marginBottom: 2,
+        fontSize: 8,
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
     },
     folioValue: {
-        fontSize: 16,
-        fontFamily: 'Helvetica-Bold',
-        color: '#e85d04',
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    dateValue: {
+        fontSize: 10,
+        color: '#334155',
+    },
+    // Contact Info
+    contactInfo: {
+        marginTop: 15,
+        gap: 4,
+    },
+    contactRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    contactText: {
+        fontSize: 9,
+        color: '#475569',
+    },
+    icon: {
+        color: '#ec5b13',
+        fontSize: 9,
+    },
+    // Info Grid
+    infoGrid: {
+        flexDirection: 'row',
+        gap: 30,
+        paddingTop: 20,
+        borderTop: '1px solid #f1f5f9',
+    },
+    infoBlock: {
+        flex: 1,
+    },
+    infoTitle: {
+        fontSize: 8,
+        fontWeight: 'bold',
+        color: '#ec5b13',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+        letterSpacing: 1,
+    },
+    infoTextBold: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: '#0f172a',
+        marginBottom: 2,
+    },
+    infoText: {
+        fontSize: 9,
+        color: '#475569',
+        marginBottom: 1,
     },
     statusBadge: {
         marginTop: 4,
-        backgroundColor: '#fff3e0',
+        backgroundColor: '#fff7ed',
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 4,
         fontSize: 8,
-        color: '#e85d04',
-        fontFamily: 'Helvetica-Bold',
-    },
-    // Date row
-    dateRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 24,
-    },
-    dateMeta: {
-        fontSize: 9,
-        color: '#555',
-    },
-    // Cards
-    cardsRow: {
-        flexDirection: 'row',
-        gap: 16,
-        marginBottom: 24,
-    },
-    card: {
-        flex: 1,
-        borderRadius: 6,
-        border: '1px solid #e5e7eb',
-        padding: 12,
-    },
-    cardTitle: {
-        fontSize: 8,
-        fontFamily: 'Helvetica-Bold',
-        color: '#e85d04',
-        marginBottom: 6,
-        textTransform: 'uppercase',
-    },
-    cardRow: {
-        flexDirection: 'row',
-        marginBottom: 2,
-    },
-    cardLabel: {
-        fontSize: 8,
-        color: '#888',
-        width: 60,
-    },
-    cardValue: {
-        fontSize: 9,
-        color: '#111',
-        flex: 1,
+        color: '#ec5b13',
+        fontWeight: 'bold',
+        alignSelf: 'flex-start',
     },
     // Table
+    main: {
+        padding: 30,
+    },
+    table: {
+        borderRadius: 8,
+        border: '1px solid #e2e8f0',
+        overflow: 'hidden',
+    },
     tableHeader: {
         flexDirection: 'row',
-        backgroundColor: '#e85d04',
-        borderRadius: 4,
-        paddingVertical: 6,
-        paddingHorizontal: 8,
-        marginBottom: 2,
+        backgroundColor: '#ec5b13',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
     },
     tableHeaderCell: {
         fontSize: 8,
-        fontFamily: 'Helvetica-Bold',
-        color: '#fff',
+        fontWeight: 'bold',
+        color: '#ffffff',
         textTransform: 'uppercase',
     },
     tableRow: {
         flexDirection: 'row',
-        paddingVertical: 6,
-        paddingHorizontal: 8,
-        borderBottom: '1px solid #f3f4f6',
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        borderBottom: '1px solid #f1f5f9',
     },
     tableRowAlt: {
-        backgroundColor: '#fafafa',
+        backgroundColor: '#f8fafc',
     },
     tableCell: {
         fontSize: 9,
-        color: '#333',
+        color: '#334155',
     },
-    // Column widths
-    colNum: { width: 24 },
-    colSku: { width: 70 },
-    colName: { flex: 1 },
-    colQty: { width: 50, textAlign: 'right' },
-    colUnit: { width: 40, textAlign: 'center' },
-    colCost: { width: 60, textAlign: 'right' },
-    colSubtotal: { width: 70, textAlign: 'right' },
+    tableCellBold: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#0f172a',
+    },
+    tableCellSub: {
+        fontSize: 7,
+        color: '#64748b',
+        marginTop: 2,
+    },
+    // Columns
+    colDesc: { flex: 3 },
+    colQty: { flex: 1, textAlign: 'center' },
+    colPrice: { flex: 1, textAlign: 'right' },
+    colTotal: { flex: 1, textAlign: 'right' },
     // Totals
+    totalsArea: {
+        marginTop: 20,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+    },
     totalsBlock: {
-        alignSelf: 'flex-end',
-        marginTop: 16,
-        width: 200,
+        width: 180,
+        gap: 8,
     },
     totalRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: 3,
+        alignItems: 'center',
     },
     totalLabel: {
         fontSize: 9,
-        color: '#555',
+        color: '#64748b',
     },
     totalValue: {
-        fontSize: 9,
-        color: '#111',
-        fontFamily: 'Helvetica-Bold',
+        fontSize: 10,
+        fontWeight: 'medium',
+        color: '#0f172a',
     },
     grandTotalRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: 5,
-        borderTop: '2px solid #e85d04',
+        alignItems: 'center',
+        paddingTop: 8,
+        borderTop: '2px solid #ec5b13',
         marginTop: 4,
     },
     grandTotalLabel: {
-        fontSize: 11,
-        fontFamily: 'Helvetica-Bold',
-        color: '#e85d04',
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: '#0f172a',
+        textTransform: 'uppercase',
     },
     grandTotalValue: {
-        fontSize: 11,
-        fontFamily: 'Helvetica-Bold',
-        color: '#e85d04',
-    },
-    // Notes
-    notesBlock: {
-        marginTop: 24,
-        padding: 10,
-        backgroundColor: '#f9fafb',
-        borderRadius: 4,
-        border: '1px solid #e5e7eb',
-    },
-    notesTitle: {
-        fontSize: 8,
-        fontFamily: 'Helvetica-Bold',
-        color: '#555',
-        marginBottom: 4,
-    },
-    notesText: {
-        fontSize: 9,
-        color: '#444',
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#ec5b13',
     },
     // Footer
     footer: {
-        position: 'absolute',
-        bottom: 30,
-        left: 40,
-        right: 40,
-        borderTop: '1px solid #e5e7eb',
-        paddingTop: 10,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        padding: 30,
+        backgroundColor: '#f8fafc',
+        borderTop: '1px solid #e2e8f0',
     },
-    footerText: {
+    footerGrid: {
+        flexDirection: 'row',
+        gap: 40,
+        marginBottom: 30,
+    },
+    notesBlock: {
+        flex: 1,
+    },
+    notesTitle: {
         fontSize: 8,
-        color: '#999',
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+    },
+    notesText: {
+        fontSize: 8,
+        color: '#64748b',
+        lineHeight: 1.4,
+    },
+    signatureArea: {
+        flex: 1,
+        flexDirection: 'row',
+        gap: 15,
+        alignItems: 'flex-end',
+    },
+    signatureBlock: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    signatureLine: {
+        width: '100%',
+        borderBottom: '1px solid #cbd5e1',
+        marginBottom: 6,
+    },
+    signatureLabel: {
+        fontSize: 8,
+        fontWeight: 'bold',
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+    },
+    documentIdBlock: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    documentIdText: {
+        fontSize: 10,
+        fontWeight: 'medium',
+        color: '#ec5b13',
+        marginBottom: 6,
+    },
+    legalFooter: {
+        paddingTop: 15,
+        borderTop: '1px solid #e2e8f0',
+        textAlign: 'center',
+    },
+    legalText: {
+        fontSize: 8,
+        color: '#94a3b8',
+        textTransform: 'uppercase',
+        letterSpacing: 1.5,
     },
 })
 
@@ -227,129 +335,126 @@ export function PurchaseOrderDocument({ po, storeName = 'Asados Proteína' }: Pr
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {/* HEADER */}
-                <View style={styles.header}>
-                    <View style={styles.brandBlock}>
-                        <Text style={styles.brandName}>{storeName}</Text>
-                        <Text style={styles.brandSub}>Orden de Compra a Proveedor</Text>
-                    </View>
-                    <View style={styles.folioBlock}>
-                        <Text style={styles.folioLabel}>Número de OC</Text>
-                        <Text style={styles.folioValue}>{po.folio}</Text>
-                        <Text style={styles.statusBadge}>
-                            {po.status === 'draft' ? 'BORRADOR' :
-                                po.status === 'sent' ? 'ENVIADA' :
-                                    po.status === 'received' ? 'RECIBIDA' : 'CANCELADA'}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* DATES */}
-                <View style={styles.dateRow}>
-                    <Text style={styles.dateMeta}>Fecha de emisión: {fmtDate(po.created_at)}</Text>
-                    {po.expected_date && (
-                        <Text style={styles.dateMeta}>Fecha de entrega esperada: {fmtDate(po.expected_date)}</Text>
-                    )}
-                </View>
-
-                {/* INFO CARDS */}
-                <View style={styles.cardsRow}>
-                    {/* Proveedor */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Proveedor</Text>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>Nombre:</Text>
-                            <Text style={styles.cardValue}>{po.supplier?.name ?? '—'}</Text>
+                <View style={styles.container}>
+                    {/* HEADER */}
+                    <View style={styles.header}>
+                        <View style={styles.headerTop}>
+                            <View style={styles.logoBlock}>
+                                <View style={styles.logoPlaceholder} />
+                                <View style={styles.brandInfo}>
+                                    <Text style={styles.brandName}>{storeName}</Text>
+                                    <Text style={styles.brandNit}>NIT: 900.123.456-7</Text>
+                                </View>
+                            </View>
+                            <View style={styles.headerRight}>
+                                <Text style={styles.title}>Orden de Compra</Text>
+                                <View style={styles.folioCard}>
+                                    <View style={styles.folioRow}>
+                                        <Text style={styles.folioLabel}>Número OC</Text>
+                                        <Text style={styles.folioLabel}>Fecha</Text>
+                                    </View>
+                                    <View style={styles.folioRow}>
+                                        <Text style={styles.folioValue}>#{po.folio}</Text>
+                                        <Text style={styles.dateValue}>{fmtDate(po.created_at)}</Text>
+                                    </View>
+                                </View>
+                            </View>
                         </View>
-                        {po.supplier?.contact_name && (
-                            <View style={styles.cardRow}>
-                                <Text style={styles.cardLabel}>Contacto:</Text>
-                                <Text style={styles.cardValue}>{po.supplier.contact_name}</Text>
+
+                        <View style={styles.infoGrid}>
+                            <View style={styles.infoBlock}>
+                                <Text style={styles.infoTitle}>Información del Proveedor</Text>
+                                <Text style={styles.infoTextBold}>{po.supplier?.name || '—'}</Text>
+                                <Text style={styles.infoText}>RFC: {po.supplier?.rfc || '—'}</Text>
+                                {po.supplier?.contact_name && <Text style={styles.infoText}>Contacto: {po.supplier.contact_name}</Text>}
+                                {po.supplier?.phone && <Text style={styles.infoText}>Tel: {po.supplier.phone}</Text>}
                             </View>
-                        )}
-                        {po.supplier?.email && (
-                            <View style={styles.cardRow}>
-                                <Text style={styles.cardLabel}>Email:</Text>
-                                <Text style={styles.cardValue}>{po.supplier.email}</Text>
+                            <View style={styles.infoBlock}>
+                                <Text style={styles.infoTitle}>Detalles de Entrega</Text>
+                                <Text style={styles.infoTextBold}>Almacén Principal - Central</Text>
+                                <Text style={styles.infoText}>Fecha esperada: {fmtDate(po.expected_date)}</Text>
+                                <Text style={styles.infoText}>Condiciones: {po.supplier?.payment_terms || 'Contado'}</Text>
+                                <Text style={styles.statusBadge}>
+                                    {po.status === 'draft' ? 'BORRADOR' :
+                                        po.status === 'sent' ? 'ENVIADA' :
+                                            po.status === 'received' ? 'RECIBIDA' : 'CANCELADA'}
+                                </Text>
                             </View>
-                        )}
-                        {po.supplier?.phone && (
-                            <View style={styles.cardRow}>
-                                <Text style={styles.cardLabel}>Teléfono:</Text>
-                                <Text style={styles.cardValue}>{po.supplier.phone}</Text>
-                            </View>
-                        )}
-                        {po.supplier?.rfc && (
-                            <View style={styles.cardRow}>
-                                <Text style={styles.cardLabel}>RFC:</Text>
-                                <Text style={styles.cardValue}>{po.supplier.rfc}</Text>
-                            </View>
-                        )}
-                    </View>
-                    {/* Condiciones */}
-                    <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Condiciones</Text>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>Pago:</Text>
-                            <Text style={styles.cardValue}>{po.supplier?.payment_terms ?? 'Contado'}</Text>
-                        </View>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>OC #:</Text>
-                            <Text style={styles.cardValue}>{po.folio}</Text>
                         </View>
                     </View>
-                </View>
 
-                {/* TABLE */}
-                <View style={styles.tableHeader}>
-                    <Text style={[styles.tableHeaderCell, styles.colNum]}>#</Text>
-                    <Text style={[styles.tableHeaderCell, styles.colSku]}>SKU</Text>
-                    <Text style={[styles.tableHeaderCell, styles.colName]}>DESCRIPCIÓN</Text>
-                    <Text style={[styles.tableHeaderCell, styles.colQty]}>CANT.</Text>
-                    <Text style={[styles.tableHeaderCell, styles.colUnit]}>U/M</Text>
-                    <Text style={[styles.tableHeaderCell, styles.colCost]}>P.UNIT</Text>
-                    <Text style={[styles.tableHeaderCell, styles.colSubtotal]}>SUBTOTAL</Text>
-                </View>
+                    {/* MAIN TABLE */}
+                    <View style={styles.main}>
+                        <View style={styles.table}>
+                            <View style={styles.tableHeader}>
+                                <Text style={[styles.tableHeaderCell, styles.colDesc]}>Descripción del Producto</Text>
+                                <Text style={[styles.tableHeaderCell, styles.colQty]}>Cant.</Text>
+                                <Text style={[styles.tableHeaderCell, styles.colPrice]}>P. Unitario</Text>
+                                <Text style={[styles.tableHeaderCell, styles.colTotal]}>Total</Text>
+                            </View>
 
-                {(po.items ?? []).map((item, idx) => (
-                    <View
-                        key={item.id}
-                        style={[styles.tableRow, idx % 2 === 1 ? styles.tableRowAlt : {}]}
-                    >
-                        <Text style={[styles.tableCell, styles.colNum]}>{idx + 1}</Text>
-                        <Text style={[styles.tableCell, styles.colSku]}>{item.product?.sku ?? '—'}</Text>
-                        <Text style={[styles.tableCell, styles.colName]}>{item.product?.name ?? '—'}</Text>
-                        <Text style={[styles.tableCell, styles.colQty]}>{Number(item.quantity_ordered).toFixed(2)}</Text>
-                        <Text style={[styles.tableCell, styles.colUnit]}>{item.product?.unit_of_measure ?? ''}</Text>
-                        <Text style={[styles.tableCell, styles.colCost]}>{fmt(Number(item.unit_cost))}</Text>
-                        <Text style={[styles.tableCell, styles.colSubtotal]}>{fmt(Number(item.subtotal))}</Text>
+                            {(po.items ?? []).map((item, idx) => (
+                                <View
+                                    key={item.id}
+                                    style={[styles.tableRow, idx % 2 === 1 ? styles.tableRowAlt : {}]}
+                                >
+                                    <View style={styles.colDesc}>
+                                        <Text style={styles.tableCellBold}>{item.product?.name || '—'}</Text>
+                                        <Text style={styles.tableCellSub}>SKU: {item.product?.sku || '—'} {item.product?.unit_of_measure ? `• ${item.product.unit_of_measure}` : ''}</Text>
+                                    </View>
+                                    <View style={styles.colQty}>
+                                        <Text style={styles.tableCell}>{Number(item.quantity_ordered).toFixed(2)}</Text>
+                                    </View>
+                                    <View style={styles.colPrice}>
+                                        <Text style={styles.tableCell}>{fmt(Number(item.unit_cost))}</Text>
+                                    </View>
+                                    <View style={styles.colTotal}>
+                                        <Text style={styles.tableCellBold}>{fmt(Number(item.subtotal))}</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* TOTALS */}
+                        <View style={styles.totalsArea}>
+                            <View style={styles.totalsBlock}>
+                                <View style={styles.totalRow}>
+                                    <Text style={styles.totalLabel}>Subtotal</Text>
+                                    <Text style={styles.totalValue}>{fmt(subtotal)}</Text>
+                                </View>
+                                <View style={styles.grandTotalRow}>
+                                    <Text style={styles.grandTotalLabel}>TOTAL</Text>
+                                    <Text style={styles.grandTotalValue}>{fmt(subtotal)}</Text>
+                                </View>
+                            </View>
+                        </View>
                     </View>
-                ))}
 
-                {/* TOTALS */}
-                <View style={styles.totalsBlock}>
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Subtotal</Text>
-                        <Text style={styles.totalValue}>{fmt(subtotal)}</Text>
-                    </View>
-                    <View style={styles.grandTotalRow}>
-                        <Text style={styles.grandTotalLabel}>TOTAL</Text>
-                        <Text style={styles.grandTotalValue}>{fmt(subtotal)}</Text>
-                    </View>
-                </View>
+                    {/* FOOTER */}
+                    <View style={styles.footer}>
+                        <View style={styles.footerGrid}>
+                            <View style={styles.notesBlock}>
+                                <Text style={styles.notesTitle}>Notas e Instrucciones</Text>
+                                <Text style={styles.notesText}>
+                                    {po.notes || 'Por favor, incluya el número de OC en todas las etiquetas de envío y facturas. Los productos deben entregarse en transporte adecuado.'}
+                                </Text>
+                            </View>
+                            <View style={styles.signatureArea}>
+                                <View style={styles.signatureBlock}>
+                                    <View style={styles.signatureLine} />
+                                    <Text style={styles.signatureLabel}>Firma Autorizada</Text>
+                                </View>
+                                <View style={styles.documentIdBlock}>
+                                    <Text style={styles.documentIdText}>OC-{po.folio}</Text>
+                                    <Text style={styles.signatureLabel}>ID Documento</Text>
+                                </View>
+                            </View>
+                        </View>
 
-                {/* NOTES */}
-                {po.notes && (
-                    <View style={styles.notesBlock}>
-                        <Text style={styles.notesTitle}>NOTAS</Text>
-                        <Text style={styles.notesText}>{po.notes}</Text>
+                        <View style={styles.legalFooter}>
+                            <Text style={styles.legalText}>{storeName.toUpperCase()} — CORTES DE CALIDAD Y SERVICIO PREMIUM</Text>
+                        </View>
                     </View>
-                )}
-
-                {/* FOOTER */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>{storeName} — Documento generado automáticamente</Text>
-                    <Text style={styles.footerText}>OC {po.folio} • {fmtDate(po.created_at)}</Text>
                 </View>
             </Page>
         </Document>

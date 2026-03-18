@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, Plus, Search, TrendingUp, TrendingDown, Filter } from 'lucide-react'
+import { Loader2, Plus, Search, TrendingUp, TrendingDown, Filter, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getMexicoDayString, parseMexicoDateToLocal } from '@/utils/date'
 import { useAuthStore } from '@/store/auth.store'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { TransactionsReportDocument } from '@/components/finance/TransactionsReportDocument'
 
 export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -113,6 +115,24 @@ export default function TransactionsPage() {
                             <Plus className="mr-2 h-4 w-4" /> Nueva Transacción
                         </Button>
                     </DialogTrigger>
+                    <PDFDownloadLink
+                        document={
+                            <TransactionsReportDocument
+                                transactions={filteredTransactions}
+                                totalIncome={totalIncome}
+                                totalExpenses={totalExpenses}
+                                period={format(new Date(), 'MMMM yyyy', { locale: es })}
+                            />
+                        }
+                        fileName={`Transacciones_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                    >
+                        {({ loading: pdfLoading }) => (
+                            <Button variant="outline" className="ml-2" disabled={pdfLoading}>
+                                {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
+                                Exportar PDF
+                            </Button>
+                        )}
+                    </PDFDownloadLink>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Nueva Transacción</DialogTitle>

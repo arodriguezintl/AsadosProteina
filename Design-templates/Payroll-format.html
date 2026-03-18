@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec5b13",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221610",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Payroll Template - Asados Proteína</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-4 md:px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1 bg-white dark:bg-slate-900 shadow-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+<!-- Header Component -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 md:px-10 py-6">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+<img alt="Asados Proteina Company Logo" class="object-contain w-full h-full" data-alt="Asados Proteina corporate logo orange and white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB25m1Bs0ZVDXGgNpTLpKXDvtkQYmQfqYMjtwA2_NCIk51oqEOSi-ZhnRcnhi2GXyLlSZm5u6QBnDUVwY0pqxI8YxKq23RngIq6IuzRmWrcLQzDcIVGfqzmx__aJoR3I7PGGY1-EoBi8_haVqSdhIYC9A1Q7tmCUkxe6SETIgUt4Q7P-f8BXMdMl5XOUam0c1-YMrFjD61_VjpfRiavsQGt1UbMgnMtQSEoXESojhPq2UzovJa02tsfy--Z_wPzFfXWA8mZmADlicM"/>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-[-0.015em]">Asados Proteína</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xs">NIT: 900.123.456-7</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-primary font-bold text-lg">Payroll Format</span>
+<span class="text-slate-500 dark:text-slate-400 text-xs">No. {{DATA:VOUCHER_NUMBER}}</span>
+</div>
+</header>
+<!-- Hero / Banner Section -->
+<div class="p-6 md:px-10">
+<div class="w-full bg-primary/5 rounded-xl border border-primary/10 flex flex-col md:flex-row justify-between items-center p-6 gap-4">
+<div class="flex flex-col gap-1">
+<p class="text-primary text-3xl font-black leading-tight tracking-[-0.033em]">Payroll Format</p>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal">Comprobante de Pago de Nómina</p>
+</div>
+<button class="flex min-w-[140px] cursor-pointer items-center justify-center gap-2 rounded-xl h-11 px-5 bg-primary text-white text-sm font-bold transition-all hover:bg-primary/90">
+<span class="material-symbols-outlined text-lg">download</span>
+<span class="truncate">Download PDF</span>
+</button>
+</div>
+</div>
+<!-- Employee Details Grid -->
+<div class="px-6 md:px-10 grid grid-cols-1 md:grid-cols-3 gap-y-4 md:gap-y-0 py-6">
+<div class="flex flex-col gap-1 border-b md:border-b-0 md:border-r border-solid border-slate-200 dark:border-slate-800 py-3 pr-4">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Employee Name</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold">{{DATA:NAME}}</p>
+</div>
+<div class="flex flex-col gap-1 border-b md:border-b-0 md:border-r border-solid border-slate-200 dark:border-slate-800 py-3 px-0 md:px-4">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Employee ID</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-medium">{{DATA:ID}}</p>
+</div>
+<div class="flex flex-col gap-1 py-3 pl-0 md:pl-4">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Pay Period</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-medium">{{DATA:PERIOD}}</p>
+</div>
+<div class="flex flex-col gap-1 border-b md:border-b-0 md:border-r border-solid border-slate-200 dark:border-slate-800 py-3 pr-4 md:mt-4 md:pt-4 md:border-t">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Position</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-medium">{{DATA:POSITION}}</p>
+</div>
+<div class="flex flex-col gap-1 border-b md:border-b-0 md:border-r border-solid border-slate-200 dark:border-slate-800 py-3 px-0 md:px-4 md:mt-4 md:pt-4 md:border-t">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Department</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-medium">{{DATA:DEPT}}</p>
+</div>
+<div class="flex flex-col gap-1 py-3 pl-0 md:pl-4 md:mt-4 md:pt-4 md:border-t">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Payment Date</p>
+<p class="text-slate-900 dark:text-slate-100 text-base font-medium">{{DATA:DATE}}</p>
+</div>
+</div>
+<!-- Main Content (Earnings vs Deductions) -->
+<div class="px-6 md:px-10 pb-10 flex flex-col gap-8">
+<!-- Earnings Section -->
+<div class="flex flex-col">
+<div class="flex items-center gap-2 pb-3 pt-5 border-b border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-primary">payments</span>
+<h2 class="text-slate-900 dark:text-slate-100 text-[20px] font-bold leading-tight tracking-[-0.015em]">Earnings (Devengados)</h2>
+</div>
+<div class="flex flex-col">
+<div class="grid grid-cols-2 py-3 border-b border-slate-100 dark:border-slate-800/50">
+<span class="text-slate-600 dark:text-slate-400 text-sm">Basic Salary</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">{{DATA:BASIC_SALARY}}</span>
+</div>
+<div class="grid grid-cols-2 py-3 border-b border-slate-100 dark:border-slate-800/50">
+<span class="text-slate-600 dark:text-slate-400 text-sm">Overtime / Extra Hours</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">{{DATA:OVERTIME}}</span>
+</div>
+<div class="grid grid-cols-2 py-3 border-b border-slate-100 dark:border-slate-800/50">
+<span class="text-slate-600 dark:text-slate-400 text-sm">Transport Allowance</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">{{DATA:TRANSPORT}}</span>
+</div>
+<div class="grid grid-cols-2 py-3 bg-primary/5 px-2 -mx-2 rounded">
+<span class="text-primary font-bold text-sm">Total Earnings</span>
+<span class="text-primary font-bold text-sm text-right">{{DATA:TOTAL_EARNINGS}}</span>
+</div>
+</div>
+</div>
+<!-- Deductions Section -->
+<div class="flex flex-col">
+<div class="flex items-center gap-2 pb-3 pt-5 border-b border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-slate-500">money_off</span>
+<h2 class="text-slate-900 dark:text-slate-100 text-[20px] font-bold leading-tight tracking-[-0.015em]">Deductions (Deducciones)</h2>
+</div>
+<div class="flex flex-col">
+<div class="grid grid-cols-2 py-3 border-b border-slate-100 dark:border-slate-800/50">
+<span class="text-slate-600 dark:text-slate-400 text-sm">Health Insurance (Salud)</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">{{DATA:HEALTH}}</span>
+</div>
+<div class="grid grid-cols-2 py-3 border-b border-slate-100 dark:border-slate-800/50">
+<span class="text-slate-600 dark:text-slate-400 text-sm">Pension Fund</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">{{DATA:PENSION}}</span>
+</div>
+<div class="grid grid-cols-2 py-3 border-b border-slate-100 dark:border-slate-800/50">
+<span class="text-slate-600 dark:text-slate-400 text-sm">Other Deductions</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium text-right">{{DATA:OTHERS}}</span>
+</div>
+<div class="grid grid-cols-2 py-3 bg-slate-100 dark:bg-slate-800/50 px-2 -mx-2 rounded">
+<span class="text-slate-700 dark:text-slate-300 font-bold text-sm">Total Deductions</span>
+<span class="text-slate-900 dark:text-slate-100 font-bold text-sm text-right">{{DATA:TOTAL_DEDUCTIONS}}</span>
+</div>
+</div>
+</div>
+<!-- Net Pay Section -->
+<div class="mt-4 p-6 bg-primary rounded-xl text-white shadow-lg shadow-primary/20">
+<div class="flex justify-between items-center">
+<div>
+<p class="text-white/80 text-sm font-medium uppercase tracking-widest">Net Pay to Receive</p>
+<p class="text-xs text-white/60">Neto a Pagar</p>
+</div>
+<div class="text-right">
+<p class="text-3xl font-black leading-none">{{DATA:NET_PAY}}</p>
+</div>
+</div>
+</div>
+<!-- Footer / Signature -->
+<div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="flex flex-col gap-2">
+<div class="h-16 border-b border-slate-300 dark:border-slate-700"></div>
+<p class="text-center text-xs text-slate-500 uppercase font-semibold">Employer Signature</p>
+</div>
+<div class="flex flex-col gap-2">
+<div class="h-16 border-b border-slate-300 dark:border-slate-700"></div>
+<p class="text-center text-xs text-slate-500 uppercase font-semibold">Employee Signature</p>
+</div>
+</div>
+</div>
+<footer class="bg-slate-50 dark:bg-slate-800/30 p-6 text-center border-t border-slate-200 dark:border-slate-800">
+<p class="text-slate-500 text-[10px] leading-relaxed">
+                        Este documento es un comprobante oficial de pago generado por Asados Proteína. <br/>
+                        Para cualquier duda o aclaración, por favor contactar al departamento de Recursos Humanos.
+                    </p>
+</footer>
+</div>
+</div>
+</div>
+</div>
+</body></html>

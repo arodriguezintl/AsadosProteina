@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Users, DollarSign, Search, Edit, Calendar, UserCheck, UserX, FileSpreadsheet, FileText } from 'lucide-react'
+import { Loader2, Plus, Users, DollarSign, Search, Edit, Calendar, UserCheck, UserX, FileSpreadsheet, FileText, Clock, LogIn, LogOut } from 'lucide-react'
 import { HRService } from '@/services/hr.service'
 import { UserService } from '@/services/user.service'
 import { useAuthStore } from '@/store/auth.store'
@@ -16,6 +16,8 @@ import type { UserRole } from '@/types/database.types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { exportToExcel, exportToPDF } from '@/utils/export'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { PayrollDocument } from '@/components/hr/PayrollDocument'
 
 interface EmployeeWithShift extends Employee {
     activeShift?: any
@@ -95,12 +97,10 @@ export default function HRPage() {
                 })
 
                 if (activeTab === 'time') {
-                    // Control Horario disabled for now
-                    // ... existing logic if enabled
                     const employeesWithShifts = await Promise.all(
                         data.map(async (emp) => {
-                            // ... existing logic ...
-                            return { ...emp, activeShift: null }
+                            const activeShift = await HRService.getActiveShift(emp.id)
+                            return { ...emp, activeShift }
                         })
                     )
                     setEmployees(employeesWithShifts)
@@ -274,7 +274,6 @@ export default function HRPage() {
         }
     }
 
-    /*
     const handleClockIn = async (employeeId: string) => {
         try {
             await HRService.clockIn(employeeId, STORE_ID)
@@ -292,7 +291,6 @@ export default function HRPage() {
             alert(error?.message || 'Error al registrar salida')
         }
     }
-    */
 
     const handleGeneratePayroll = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -612,7 +610,6 @@ export default function HRPage() {
         </div >
     )
 
-    /*
     const renderTimeTracking = () => (
         <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -626,7 +623,7 @@ export default function HRPage() {
                             <div className="flex justify-between items-start">
                                 <div>
                                     <CardTitle className="text-base">{emp.first_name} {emp.last_name}</CardTitle>
-                                    <CardDescription>{emp.position}</CardDescription>
+                                    <div className="text-sm text-muted-foreground">{emp.position}</div>
                                 </div>
                                 <Users className="h-4 w-4 text-muted-foreground" />
                             </div>
@@ -671,7 +668,6 @@ export default function HRPage() {
             </div>
         </div>
     )
-    */
 
     const renderPayroll = () => (
         <div className="space-y-4">
@@ -788,6 +784,7 @@ export default function HRPage() {
                                 <TableHead>Horas</TableHead>
                                 <TableHead>Total Pagado</TableHead>
                                 <TableHead>Estado</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -822,6 +819,35 @@ export default function HRPage() {
                                                 {payroll.status === 'paid' ? 'Pagado' : 'Borrador'}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell className="text-right">
+                                            <PDFDownloadLink
+                                                document={
+                                                    <PayrollDocument
+                                                        data={{
+                                                            employee_name: payroll.employee ? `${payroll.employee.first_name} ${payroll.employee.last_name}` : 'N/A',
+                                                            employee_id: payroll.employee_id.slice(0, 8),
+                                                            position: payroll.employee?.position || 'Personal',
+                                                            period_start: format(new Date(payroll.period_start), 'dd/MM/yyyy'),
+                                                            period_end: format(new Date(payroll.period_end), 'dd/MM/yyyy'),
+                                                            base_salary: (payroll.total_paid || 0) * 0.8, // Mock splits since we don't have breakdown
+                                                            overtime: (payroll.total_paid || 0) * 0.1,
+                                                            transport_allowance: (payroll.total_paid || 0) * 0.1,
+                                                            health_deduction: (payroll.total_paid || 0) * 0.04,
+                                                            pension_deduction: (payroll.total_paid || 0) * 0.04,
+                                                            other_deductions: 0,
+                                                            net_pay: payroll.total_paid || 0
+                                                        }}
+                                                    />
+                                                }
+                                                fileName={`Recibo_${payroll.employee?.first_name}_${format(new Date(payroll.period_end), 'yyyyMMdd')}.pdf`}
+                                            >
+                                                {({ loading: pdfLoading }) => (
+                                                    <Button variant="ghost" size="sm" disabled={pdfLoading} className="text-red-500">
+                                                        {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                                    </Button>
+                                                )}
+                                            </PDFDownloadLink>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
@@ -850,7 +876,6 @@ export default function HRPage() {
                 >
                     <Users className="h-4 w-4" /> Personal
                 </button>
-                {/* 
                 <button
                     onClick={() => setActiveTab('time')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'time' ? 'bg-white shadow text-primary' : 'text-muted-foreground hover:bg-white/50'
@@ -858,7 +883,6 @@ export default function HRPage() {
                 >
                     <Clock className="h-4 w-4" /> Control Horario
                 </button>
-                */}
                 <button
                     onClick={() => setActiveTab('payroll')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'payroll' ? 'bg-white shadow text-primary' : 'text-muted-foreground hover:bg-white/50'
@@ -904,7 +928,7 @@ export default function HRPage() {
             )}
 
             {activeTab === 'employees' && renderEmployees()}
-            {/* {activeTab === 'time' && renderTimeTracking()} */}
+            {activeTab === 'time' && renderTimeTracking()}
             {activeTab === 'payroll' && renderPayroll()}
         </div>
     )

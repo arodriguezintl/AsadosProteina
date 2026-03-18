@@ -13,6 +13,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RestockReport } from './RestockReport'
 import { getMexicoDayString, getMexicoStartOfDayISO, getMexicoEndOfDayISO } from '@/utils/date'
+import { PDFDownloadLink } from '@react-pdf/renderer'
+import { SalesReportDocument } from '@/components/reports/SalesReportDocument'
 
 import { useAuthStore } from '@/store/auth.store'
 
@@ -297,20 +299,29 @@ export default function ReportsPage() {
                                             >
                                                 <FileSpreadsheet className="w-6 h-6 text-green-500" />
                                             </Button>
-                                            <Button
-                                                variant="outline"
-                                                className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
-                                                disabled={topProducts.length === 0}
-                                                title="Exportar a PDF"
-                                                onClick={() => exportToPDF(
-                                                    'Reporte de Ventas por Producto',
-                                                    ['Producto', 'Cantidad', 'Venta Total ($)'],
-                                                    topProducts.map(p => [p.name, p.quantity, p.revenue.toFixed(2)]),
-                                                    `Reporte_Ventas_Productos_${dateRange.start}_al_${dateRange.end}`
-                                                )}
+                                            <PDFDownloadLink
+                                                document={
+                                                    <SalesReportDocument
+                                                        data={topProducts}
+                                                        totalRevenue={salesStats.totalSales}
+                                                        totalOrders={salesStats.totalOrders}
+                                                        averageTicket={salesStats.avgTicket}
+                                                        period={`${dateRange.start} a ${dateRange.end}`}
+                                                    />
+                                                }
+                                                fileName={`Reporte_Ventas_${dateRange.start}_al_${dateRange.end}.pdf`}
                                             >
-                                                <FileText className="w-6 h-6 text-red-500" />
-                                            </Button>
+                                                {({ loading: pdfLoading }) => (
+                                                    <Button
+                                                        variant="outline"
+                                                        className="h-12 w-12 rounded-xl border-red-200 bg-white shadow-sm hover:bg-red-50 hover:border-red-300 transition-all p-0 flex items-center justify-center"
+                                                        disabled={topProducts.length === 0 || pdfLoading}
+                                                        title="Exportar a PDF"
+                                                    >
+                                                        {pdfLoading ? <Loader2 className="w-6 h-6 animate-spin text-red-500" /> : <FileText className="w-6 h-6 text-red-500" />}
+                                                    </Button>
+                                                )}
+                                            </PDFDownloadLink>
                                         </div>
                                     </CardHeader>
                                     <CardContent>
