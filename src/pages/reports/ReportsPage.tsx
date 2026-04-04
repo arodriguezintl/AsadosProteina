@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText, Printer } from 'lucide-react'
+import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { exportToExcel, exportToPDF } from '@/utils/export'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -39,6 +39,8 @@ export default function ReportsPage() {
     const [valuation, setValuation] = useState({ totalValuation: 0, productCount: 0 })
     const [storeComparison, setStoreComparison] = useState<any[]>([])
     const [ordersList, setOrdersList] = useState<any[]>([])
+    const [currentPage, setCurrentPage] = useState(1)
+    const ITEMS_PER_PAGE = 10
 
     const { buildTicketData } = useTicketPrint()
 
@@ -52,8 +54,9 @@ export default function ReportsPage() {
 
     useEffect(() => {
         if (!isSuperAdmin && !userStoreId) return
+        setCurrentPage(1) // Reset to first page on filter change
         loadReports()
-    }, [selectedStoreId, isSuperAdmin, userStoreId])
+    }, [selectedStoreId, isSuperAdmin, userStoreId, dateRange.start, dateRange.end])
 
     const loadStoresList = async () => {
         try {
@@ -388,48 +391,82 @@ export default function ReportsPage() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {ordersList.map((order) => (
-                                                <TableRow key={order.id}>
-                                                    <TableCell className="font-mono text-xs font-bold">{order.order_number}</TableCell>
-                                                    <TableCell className="text-xs">
-                                                        {new Date(order.created_at).toLocaleString('es-MX', {
-                                                            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                                                        })}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs">{order.customer?.full_name || 'Mostrador'}</TableCell>
-                                                    <TableCell className="text-xs capitalize">
-                                                        {order.payment_method === 'cash' ? '💵 Efectivo' :
-                                                         order.payment_method === 'card' ? `💳 Tarjeta ${order.referencia_pago ? `(****${order.referencia_pago})` : ''}` :
-                                                         `🏦 Transf. ${order.referencia_pago ? `(${order.referencia_pago})` : ''}`}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-bold">${Number(order.total).toFixed(2)}</TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="h-8 px-2 text-xs border-orange-200 text-orange-700 hover:bg-orange-50"
-                                                            onClick={() => {
-                                                                const ticketData = buildTicketData(
-                                                                    order.order_number,
-                                                                    order.items?.map((item: any) => ({
-                                                                        product: { name: item.product?.name || 'Producto', sale_price: item.unit_price },
-                                                                        quantity: item.quantity
-                                                                    })) || [],
-                                                                    order.tax || 0,
-                                                                    order.customer || null,
-                                                                    order.order_type
-                                                                )
-                                                                PrintService.printTicket(ticketData)
-                                                            }}
-                                                        >
-                                                            <Printer className="h-3.5 w-3.5 mr-1" />
-                                                            Reimprimir
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {ordersList
+                                                .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+                                                .map((order) => (
+                                                    <TableRow key={order.id}>
+                                                        <TableCell className="font-mono text-xs font-bold">{order.order_number}</TableCell>
+                                                        <TableCell className="text-xs">
+                                                            {new Date(order.created_at).toLocaleString('es-MX', {
+                                                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                            })}
+                                                        </TableCell>
+                                                        <TableCell className="text-xs">{order.customer?.full_name || 'Mostrador'}</TableCell>
+                                                        <TableCell className="text-xs capitalize">
+                                                            {order.payment_method === 'cash' ? '💵 Efectivo' :
+                                                                order.payment_method === 'card' ? `💳 Tarjeta ${order.referencia_pago ? `(****${order.referencia_pago})` : ''}` :
+                                                                    `🏦 Transf. ${order.referencia_pago ? `(${order.referencia_pago})` : ''}`}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-bold">${Number(order.total).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-center">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-8 px-2 text-xs border-orange-200 text-orange-700 hover:bg-orange-50"
+                                                                onClick={() => {
+                                                                    const ticketData = buildTicketData(
+                                                                        order.order_number,
+                                                                        order.items?.map((item: any) => ({
+                                                                            product: { name: item.product?.name || 'Producto', sale_price: item.unit_price },
+                                                                            quantity: item.quantity
+                                                                        })) || [],
+                                                                        order.tax || 0,
+                                                                        order.customer || null,
+                                                                        order.order_type
+                                                                    )
+                                                                    PrintService.printTicket(ticketData)
+                                                                }}
+                                                            >
+                                                                <Printer className="h-3.5 w-3.5 mr-1" />
+                                                                Reimprimir
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
                                         </TableBody>
                                     </Table>
+
+                                    {/* Pagination Controls */}
+                                    {ordersList.length > ITEMS_PER_PAGE && (
+                                        <div className="flex items-center justify-between px-2 py-4 border-t">
+                                            <div className="text-sm text-muted-foreground">
+                                                Mostrando <span className="font-medium">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, ordersList.length)}</span> a <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, ordersList.length)}</span> de <span className="font-medium">{ordersList.length}</span> registros
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                    disabled={currentPage === 1}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                </Button>
+                                                <div className="text-xs font-medium">
+                                                    Página {currentPage} de {Math.ceil(ordersList.length / ITEMS_PER_PAGE)}
+                                                </div>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(ordersList.length / ITEMS_PER_PAGE)))}
+                                                    disabled={currentPage === Math.ceil(ordersList.length / ITEMS_PER_PAGE)}
+                                                    className="h-8 w-8 p-0"
+                                                >
+                                                    <ChevronRight className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         )}
