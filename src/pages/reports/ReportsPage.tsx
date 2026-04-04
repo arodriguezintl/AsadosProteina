@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText } from 'lucide-react'
+import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText, Printer } from 'lucide-react'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { exportToExcel, exportToPDF } from '@/utils/export'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -15,8 +15,9 @@ import { RestockReport } from './RestockReport'
 import { getMexicoDayString, getMexicoStartOfDayISO, getMexicoEndOfDayISO } from '@/utils/date'
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { SalesReportDocument } from '@/components/reports/SalesReportDocument'
-
 import { useAuthStore } from '@/store/auth.store'
+import { useTicketPrint } from '@/hooks/useTicketPrint'
+import { PrintService } from '@/services/print.service'
 
 export default function ReportsPage() {
     const [loading, setLoading] = useState(true)
@@ -37,6 +38,9 @@ export default function ReportsPage() {
     const [topProducts, setTopProducts] = useState<any[]>([])
     const [valuation, setValuation] = useState({ totalValuation: 0, productCount: 0 })
     const [storeComparison, setStoreComparison] = useState<any[]>([])
+    const [ordersList, setOrdersList] = useState<any[]>([])
+
+    const { buildTicketData } = useTicketPrint()
 
     useEffect(() => {
         if (isSuperAdmin) {
@@ -47,11 +51,7 @@ export default function ReportsPage() {
     }, [isSuperAdmin, userStoreId])
 
     useEffect(() => {
-        // If not super admin, wait for storeId to be set
         if (!isSuperAdmin && !userStoreId) return
-
-        // If super admin and 'all' is selected, maybe we show aggregate? 
-        // For now, let's load reports when filter changes
         loadReports()
     }, [selectedStoreId, isSuperAdmin, userStoreId])
 
@@ -67,42 +67,33 @@ export default function ReportsPage() {
     const loadReports = async () => {
         setLoading(true)
         try {
-            // Fix timezone: ensure user's local day translates exactly to the expected UTC boundaries
             const start = getMexicoStartOfDayISO(dateRange.start)
             const end = getMexicoEndOfDayISO(dateRange.end)
-
-            // Determine which store to fetch for main stats
-            // If Super Admin and 'all', we might want aggregate of all? 
-            // Or just disable main stats if 'all' selected and only show comparison.
-            // Let's assume if 'all', we fetch comparison. If specific, we fetch stats for that store.
-
             const targetStoreId = isSuperAdmin ? (selectedStoreId === 'all' ? null : selectedStoreId) : userStoreId
 
             const promises: Promise<any>[] = []
 
             if (targetStoreId) {
-                // Fetch specific store stats
                 promises.push(ReportService.getSalesReport(targetStoreId, start, end))
                 promises.push(ReportService.getTopProducts(targetStoreId, start, end, 5))
                 promises.push(ReportService.getInventoryValuation(targetStoreId))
             } else if (isSuperAdmin && selectedStoreId === 'all') {
-                // Fetch comparison for all stores
                 promises.push(ReportService.getSalesByStore(start, end))
-                // We can also calculate total aggregate sales from comparison
             }
 
             const results = await Promise.all(promises)
 
             if (targetStoreId) {
                 setSalesStats(results[0])
+                setOrdersList(results[0].orders || [])
                 setTopProducts(results[1])
                 setValuation(results[2])
-                setStoreComparison([]) // clear comparison if focused on one store
+                setStoreComparison([])
             } else if (isSuperAdmin && selectedStoreId === 'all') {
                 const comparison = results[0]
                 setStoreComparison(comparison)
+                setOrdersList([])
 
-                // Aggregate for top cards
                 const totalSales = comparison.reduce((sum: number, s: any) => sum + s.totalSales, 0)
                 const totalOrders = comparison.reduce((sum: number, s: any) => sum + s.totalOrders, 0)
                 const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0
@@ -111,7 +102,6 @@ export default function ReportsPage() {
                 setTopProducts([])
                 setValuation({ totalValuation: 0, productCount: 0 })
             }
-
         } catch (error) {
             console.error('Error loading reports:', error)
         } finally {
@@ -374,6 +364,74 @@ export default function ReportsPage() {
                                     </CardContent>
                                 </Card>
                             </div>
+                        )}
+
+                        {/* Recent Orders Table with Reprint Option */}
+                        {selectedStoreId !== 'all' && ordersList.length > 0 && (
+                            <Card className="mt-6">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <ShoppingBag className="h-5 w-5" />
+                                        Detalle de Ventas Recientes
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Folio</TableHead>
+                                                <TableHead>Fecha / Hora</TableHead>
+                                                <TableHead>Cliente</TableHead>
+                                                <TableHead>Método</TableHead>
+                                                <TableHead className="text-right">Total</TableHead>
+                                                <TableHead className="text-center">Acciones</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {ordersList.map((order) => (
+                                                <TableRow key={order.id}>
+                                                    <TableCell className="font-mono text-xs font-bold">{order.order_number}</TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {new Date(order.created_at).toLocaleString('es-MX', {
+                                                            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                                                        })}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">{order.customer?.full_name || 'Mostrador'}</TableCell>
+                                                    <TableCell className="text-xs capitalize">
+                                                        {order.payment_method === 'cash' ? '💵 Efectivo' :
+                                                         order.payment_method === 'card' ? `💳 Tarjeta ${order.referencia_pago ? `(****${order.referencia_pago})` : ''}` :
+                                                         `🏦 Transf. ${order.referencia_pago ? `(${order.referencia_pago})` : ''}`}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-bold">${Number(order.total).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-8 px-2 text-xs border-orange-200 text-orange-700 hover:bg-orange-50"
+                                                            onClick={() => {
+                                                                const ticketData = buildTicketData(
+                                                                    order.order_number,
+                                                                    order.items?.map((item: any) => ({
+                                                                        product: { name: item.product?.name || 'Producto', sale_price: item.unit_price },
+                                                                        quantity: item.quantity
+                                                                    })) || [],
+                                                                    order.tax || 0,
+                                                                    order.customer || null,
+                                                                    order.order_type
+                                                                )
+                                                                PrintService.printTicket(ticketData)
+                                                            }}
+                                                        >
+                                                            <Printer className="h-3.5 w-3.5 mr-1" />
+                                                            Reimprimir
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
                         )}
                     </TabsContent>
 

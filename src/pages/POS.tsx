@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import type { Product } from '@/types/inventory'
-import type { CreateOrderDTO, CreateOrderItemDTO } from '@/types/sales'
+import type { CreateOrderDTO, CreateOrderItemDTO, PaymentMethod } from '@/types/sales'
 import type { Customer } from '@/types/customers'
 import type { FinanceCategory } from '@/types/finance'
 import { CustomerService } from '@/services/customer.service'
@@ -59,6 +59,11 @@ export default function POS() {
         payment_method: 'cash' as 'cash' | 'transfer' | 'card',
         transaction_date: getMexicoDayString()
     })
+    // Payment selection state
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
+    const [montoRecibido, setMontoRecibido] = useState<number>(0)
+    const [referenciaPago, setReferenciaPago] = useState<string>('')
+    const [showPaymentModal, setShowPaymentModal] = useState(false)
     const { user, storeId } = useAuthStore()
     const { buildTicketData } = useTicketPrint()
 
@@ -269,12 +274,14 @@ export default function POS() {
                 customer_id: selectedCustomer?.id,
                 order_type: orderType,
                 status: 'pending',
-                payment_method: 'cash',
+                payment_method: selectedPaymentMethod || 'cash',
                 payment_status: 'paid',
                 subtotal: subtotal,
                 total: total,
                 tax: tax,
-                discount: 0
+                discount: 0,
+                referencia_pago: (selectedPaymentMethod === 'card' || selectedPaymentMethod === 'transfer') ? referenciaPago : undefined,
+                monto_recibido: selectedPaymentMethod === 'cash' ? montoRecibido : undefined
             }
 
             const itemsData: CreateOrderItemDTO[] = finalCart.map(item => ({
@@ -332,13 +339,18 @@ export default function POS() {
 
                 const { data: orders } = await supabase
                     .from('orders')
-                    .select('id, total, status')
+                    .select('id, total, status, payment_method')
                     .eq('store_id', storeId)
                     .gte('created_at', startDate)
 
                 const validOrders = orders?.filter(o => o.status !== 'cancelled') || []
                 const totalSales = validOrders.reduce((sum, o) => sum + (o.total || 0), 0)
                 const trxCount = validOrders.length
+
+                // Group by payment method
+                const cashTotal = validOrders.filter(o => o.payment_method === 'cash').reduce((sum, o) => sum + (o.total || 0), 0)
+                const cardTotal = validOrders.filter(o => o.payment_method === 'card').reduce((sum, o) => sum + (o.total || 0), 0)
+                const transferTotal = validOrders.filter(o => o.payment_method === 'transfer').reduce((sum, o) => sum + (o.total || 0), 0)
 
                 if (activeShift) {
                     await HRService.clockOut(employee.id, `Corte de Caja automático. Ventas: $${totalSales} (${trxCount} transacciones).`)
@@ -353,6 +365,10 @@ export default function POS() {
                     orderTime: new Date().toLocaleTimeString(),
                     orderType: "pickup",
                     items: [
+                        { description: "Total Efectivo", qty: validOrders.filter(o => o.payment_method === 'cash').length, lineTotal: cashTotal },
+                        { description: "Total Tarjeta", qty: validOrders.filter(o => o.payment_method === 'card').length, lineTotal: cardTotal },
+                        { description: "Total Transf.", qty: validOrders.filter(o => o.payment_method === 'transfer').length, lineTotal: transferTotal },
+                        { description: "---", qty: 0, lineTotal: 0 },
                         { description: "Transacciones", qty: trxCount, lineTotal: totalSales }
                     ],
                     subtotal: totalSales,
@@ -644,10 +660,44 @@ export default function POS() {
                             <span>Total</span>
                             <span>${cartTotal.toFixed(2)}</span>
                         </div>
-                        <Button className="w-full" size="lg" disabled={cart.length === 0 || isCheckingOut} onClick={handleCheckout}>
-                            {isCheckingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Cobrar ${cartTotal.toFixed(2)}
-                        </Button>
+                        <div className="grid grid-cols-3 gap-2 w-full">
+                            <Button
+                                variant="outline"
+                                className="flex-col h-16 border-green-200 hover:bg-green-50 text-green-700"
+                                disabled={cart.length === 0 || isCheckingOut}
+                                onClick={() => {
+                                    setSelectedPaymentMethod('cash')
+                                    setShowPaymentModal(true)
+                                }}
+                            >
+                                <span className="text-xl">💵</span>
+                                <span className="text-[10px] font-bold">Efectivo</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex-col h-16 border-blue-200 hover:bg-blue-50 text-blue-700"
+                                disabled={cart.length === 0 || isCheckingOut}
+                                onClick={() => {
+                                    setSelectedPaymentMethod('card')
+                                    setShowPaymentModal(true)
+                                }}
+                            >
+                                <span className="text-xl">💳</span>
+                                <span className="text-[10px] font-bold">Tarjeta</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex-col h-16 border-purple-200 hover:bg-purple-50 text-purple-700"
+                                disabled={cart.length === 0 || isCheckingOut}
+                                onClick={() => {
+                                    setSelectedPaymentMethod('transfer')
+                                    setShowPaymentModal(true)
+                                }}
+                            >
+                                <span className="text-xl">🏦</span>
+                                <span className="text-[10px] font-bold">Transf.</span>
+                            </Button>
+                        </div>
                     </CardFooter>
                 </Card>
             </div>
@@ -773,6 +823,106 @@ export default function POS() {
                             setPromoExtraItem('')
                             processCheckout(false)
                         }}>Omitir Promoción (Ninguna)</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Payment Details Dialog */}
+            <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            {selectedPaymentMethod === 'cash' && "💵 Pago en Efectivo"}
+                            {selectedPaymentMethod === 'card' && "💳 Pago con Tarjeta"}
+                            {selectedPaymentMethod === 'transfer' && "🏦 Pago por Transferencia"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Detalles del pago para la orden de ${cartTotal.toFixed(2)}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-4 space-y-4">
+                        {selectedPaymentMethod === 'cash' && (
+                            <div className="space-y-4">
+                                <div className="p-4 bg-green-50 rounded-lg border border-green-100 flex justify-between items-center">
+                                    <span className="text-sm font-medium text-green-800">Total a Cobrar:</span>
+                                    <span className="text-2xl font-bold text-green-900">${cartTotal.toFixed(2)}</span>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="monto-recibido">Monto Recibido</Label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                                        <Input
+                                            id="monto-recibido"
+                                            type="number"
+                                            placeholder="0.00"
+                                            className="pl-7 text-lg font-bold"
+                                            value={montoRecibido || ''}
+                                            onChange={(e) => setMontoRecibido(parseFloat(e.target.value) || 0)}
+                                            autoFocus
+                                        />
+                                    </div>
+                                </div>
+                                {montoRecibido > 0 && (
+                                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+                                        <span className="text-sm font-medium text-orange-800">Cambio a Devolver:</span>
+                                        <span className={`text-3xl font-black ${montoRecibido >= cartTotal ? 'text-orange-600' : 'text-red-500'}`}>
+                                            ${(montoRecibido >= cartTotal ? (montoRecibido - cartTotal) : 0).toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {selectedPaymentMethod === 'card' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="digitos-tarjeta">Últimos 4 dígitos del ticket (Recomendado)</Label>
+                                    <Input
+                                        id="digitos-tarjeta"
+                                        placeholder="Ej: 4509"
+                                        maxLength={4}
+                                        value={referenciaPago}
+                                        onChange={(e) => setReferenciaPago(e.target.value.replace(/\D/g, ''))}
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedPaymentMethod === 'transfer' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="referencia-transf">Referencia de Rastreo</Label>
+                                    <Input
+                                        id="referencia-transf"
+                                        placeholder="Folio o concepto de la App bancaria"
+                                        value={referenciaPago}
+                                        onChange={(e) => setReferenciaPago(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setShowPaymentModal(false)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            className={`${selectedPaymentMethod === 'cash' ? 'bg-green-600 hover:bg-green-700' :
+                                selectedPaymentMethod === 'card' ? 'bg-blue-600 hover:bg-blue-700' :
+                                    'bg-purple-600 hover:bg-purple-700'}`}
+                            disabled={isCheckingOut || (selectedPaymentMethod === 'cash' && montoRecibido < cartTotal)}
+                            onClick={() => {
+                                setShowPaymentModal(false)
+                                handleCheckout()
+                            }}
+                        >
+                            {isCheckingOut ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Confirmar Pago
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

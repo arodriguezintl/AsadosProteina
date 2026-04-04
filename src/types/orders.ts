@@ -31,6 +31,8 @@ export interface Order {
     payment_method: PaymentMethod
     payment_status: PaymentStatus
     notes?: string
+    referencia_pago?: string
+    monto_recibido?: number
     created_by?: string
     created_at: string
     updated_at: string
