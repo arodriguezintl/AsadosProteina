@@ -305,6 +305,8 @@ export default function POS() {
 
             setCart([])
             setSelectedCustomer(null)
+            setMontoRecibido(0)
+            setReferenciaPago('')
             // Reload products to update stock display
             loadProducts()
 
