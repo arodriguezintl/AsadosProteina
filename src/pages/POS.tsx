@@ -27,6 +27,11 @@ import { HRService } from '@/services/hr.service'
 import { supabase } from '@/lib/supabase'
 import { getMexicoDayString, getMexicoStartOfDayISO } from '@/utils/date'
 
+// Assets
+import mobileBankingImg from '@/assets/mobile-banking.png'
+import cashImg from '@/assets/cash.png'
+import cardImg from '@/assets/card.png'
+
 interface CartItem {
     product: Product
     quantity: number
@@ -665,38 +670,44 @@ export default function POS() {
                         <div className="grid grid-cols-3 gap-2 w-full">
                             <Button
                                 variant="outline"
-                                className="flex-col h-16 border-green-200 hover:bg-green-50 text-green-700"
+                                className={`flex-col h-20 border-green-200 transition-all duration-300 ${selectedPaymentMethod === 'cash' ? 'bg-green-600 text-white border-green-600 scale-105 shadow-lg shadow-green-200' : 'hover:bg-green-50 text-green-700'}`}
                                 disabled={cart.length === 0 || isCheckingOut}
                                 onClick={() => {
                                     setSelectedPaymentMethod('cash')
                                     setShowPaymentModal(true)
                                 }}
                             >
-                                <span className="text-xl">💵</span>
+                                <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'cash' ? 'bg-white/20' : 'bg-green-100'}`}>
+                                    <img src={cashImg} className="h-6 w-6 object-contain" alt="Efectivo" />
+                                </div>
                                 <span className="text-[10px] font-bold">Efectivo</span>
                             </Button>
                             <Button
                                 variant="outline"
-                                className="flex-col h-16 border-blue-200 hover:bg-blue-50 text-blue-700"
+                                className={`flex-col h-20 border-blue-200 transition-all duration-300 ${selectedPaymentMethod === 'card' ? 'bg-blue-600 text-white border-blue-600 scale-105 shadow-lg shadow-blue-200' : 'hover:bg-blue-50 text-blue-700'}`}
                                 disabled={cart.length === 0 || isCheckingOut}
                                 onClick={() => {
                                     setSelectedPaymentMethod('card')
                                     setShowPaymentModal(true)
                                 }}
                             >
-                                <span className="text-xl">💳</span>
+                                <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'card' ? 'bg-white/20' : 'bg-blue-100'}`}>
+                                    <img src={cardImg} className="h-6 w-6 object-contain" alt="Tarjeta" />
+                                </div>
                                 <span className="text-[10px] font-bold">Tarjeta</span>
                             </Button>
                             <Button
                                 variant="outline"
-                                className="flex-col h-16 border-purple-200 hover:bg-purple-50 text-purple-700"
+                                className={`flex-col h-20 border-purple-200 transition-all duration-300 ${selectedPaymentMethod === 'transfer' ? 'bg-purple-600 text-white border-purple-600 scale-105 shadow-lg shadow-purple-200' : 'hover:bg-purple-50 text-purple-700'}`}
                                 disabled={cart.length === 0 || isCheckingOut}
                                 onClick={() => {
                                     setSelectedPaymentMethod('transfer')
                                     setShowPaymentModal(true)
                                 }}
                             >
-                                <span className="text-xl">🏦</span>
+                                <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'transfer' ? 'bg-white/20' : 'bg-purple-100'}`}>
+                                    <img src={mobileBankingImg} className="h-6 w-6 object-contain" alt="Transfer" />
+                                </div>
                                 <span className="text-[10px] font-bold">Transf.</span>
                             </Button>
                         </div>
