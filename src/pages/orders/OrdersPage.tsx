@@ -119,7 +119,10 @@ export default function OrdersPage() {
             let hasAutoCompleted = false
             
             for (const order of data) {
-                if (order.status !== 'completed' && order.status !== 'cancelled') {
+                // Skip auto-complete for external clients (City Express)
+                const isCityEx = (order.metadata as any)?.source === 'city-ex'
+                
+                if (order.status !== 'completed' && order.status !== 'cancelled' && !isCityEx) {
                     const orderTime = new Date(order.created_at).getTime()
                     const diffMins = (now - orderTime) / (1000 * 60)
                     if (diffMins >= 20) {

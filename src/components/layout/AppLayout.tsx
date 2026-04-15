@@ -39,7 +39,7 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false, isExpan
 }
 
 export function AppLayout() {
-    const { user, role, modules, signOut, storeId } = useAuthStore()
+    const { user, role, modules, signOut, storeId, brandingConfig } = useAuthStore()
     const [storeName, setStoreName] = useState<string>('')
     const [isPinned, setIsPinned] = useState(true)
     const [isHovered, setIsHovered] = useState(false)
@@ -105,8 +105,8 @@ export function AppLayout() {
 
                     <div className={cn("relative flex flex-col items-center justify-center transition-all duration-300", isExpanded ? "w-full" : "w-10")}>
                         <img
-                            src={logoImage}
-                            alt="Asados Proteina"
+                            src={brandingConfig?.logo_url || logoImage}
+                            alt={brandingConfig?.client_name || "Asados Proteina"}
                             className={cn("h-auto object-contain transition-all duration-300", isExpanded ? "max-h-16 w-auto" : "max-h-10 w-auto")}
                         />
                         {isExpanded && <span className="text-[10px] bg-blue-500 text-white px-1 rounded shadow-sm mt-1">BETA</span>}
@@ -123,10 +123,12 @@ export function AppLayout() {
                     {/* Principal Section */}
                     {(canViewDashboard || canViewOrders || canViewPOS) && (
                         <>
-                            <div className={cn("text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 transition-opacity duration-300 whitespace-nowrap", !isExpanded && "opacity-0")}>Principal</div>
+                            {role !== 'external_client' && (
+                                <div className={cn("text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 transition-opacity duration-300 whitespace-nowrap", !isExpanded && "opacity-0")}>Principal</div>
+                            )}
                             {canViewDashboard && <NavItem to="/dashboard" icon={LayoutDashboard} label="Inicio" exact isExpanded={isExpanded} />}
-                            {canViewOrders && <NavItem to="/orders" icon={ClipboardList} label="Pedidos" isExpanded={isExpanded} />}
-                            {canViewPOS && <NavItem to="/pos" icon={Calculator} label="Punto de Venta" isExpanded={isExpanded} />}
+                            {canViewOrders && <NavItem to="/orders" icon={ClipboardList} label={role === 'external_client' ? 'Mis Pedidos' : 'Pedidos'} isExpanded={isExpanded} />}
+                            {canViewPOS && <NavItem to="/pos" icon={Calculator} label={role === 'external_client' ? 'Hacer Pedido' : 'Punto de Venta'} isExpanded={isExpanded} />}
                         </>
                     )}
 

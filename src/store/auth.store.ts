@@ -23,6 +23,7 @@ interface AuthState {
     role: UserRole | null
     storeId: string | null
     modules: string[]
+    brandingConfig: { client_name?: string, logo_url?: string } | null
     loading: boolean
     signIn: (email: string, password?: string) => Promise<{ error: any }>
     signOut: () => Promise<void>
@@ -35,6 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     role: null,
     storeId: null,
     modules: [],
+    brandingConfig: null,
     loading: true,
 
     signIn: async (email: string, password?: string) => {
@@ -88,7 +90,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     reset: () => {
-        set({ user: null, role: null, storeId: null, modules: [], loading: false })
+        set({ user: null, role: null, storeId: null, modules: [], brandingConfig: null, loading: false })
     },
 
     checkSession: async () => {
@@ -113,7 +115,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data: profile, error } = await withTimeout(
                 supabase
                     .from('user_profiles')
-                    .select('role, store_id, modules')
+                    .select('role, store_id, modules, branding_config')
                     .eq('id', session.user.id)
                     .single()
             )
@@ -147,6 +149,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 role: userRole,
                 storeId: userStoreId || null,
                 modules: userModules,
+                brandingConfig: profile?.branding_config || null,
                 loading: false
             })
 
@@ -157,7 +160,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 // If user was already logged in, keep them logged in during transient errors
                 set({ loading: false })
             } else {
-                set({ user: null, role: null, storeId: null, modules: [], loading: false })
+                set({ user: null, role: null, storeId: null, modules: [], brandingConfig: null, loading: false })
             }
         }
     }

@@ -34,6 +34,7 @@ export interface Order {
     referencia_pago?: string
     monto_recibido?: number
     created_by?: string
+    metadata?: Record<string, any>
     created_at: string
     updated_at: string
 

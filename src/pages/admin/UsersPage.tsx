@@ -222,7 +222,8 @@ export default function UsersPage() {
             cashier: { color: 'bg-green-500', label: 'Cajero' },
             cook: { color: 'bg-orange-500', label: 'Cocinero' },
             delivery: { color: 'bg-yellow-500', label: 'Repartidor' },
-            accountant: { color: 'bg-indigo-500', label: 'Contador' }
+            accountant: { color: 'bg-indigo-500', label: 'Contador' },
+            external_client: { color: 'bg-pink-500', label: 'Cliente Externo' }
         }
         return variants[role] || { color: 'bg-gray-500', label: role }
     }

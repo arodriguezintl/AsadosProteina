@@ -148,6 +148,24 @@ export const ROLE_PERMISSIONS: Record<UserRole, Record<ModuleName, Permission[]>
         payroll: ['view', 'create', 'edit'],
         promotions: [],
     },
+    external_client: {
+        dashboard: [],
+        pos: ['view', 'create'],
+        orders: ['view'],
+        inventory: [],
+        recipes: [],
+        finance: [],
+        transactions: [],
+        finance_categories: [],
+        reports: [],
+        crm: [],
+        hr: [],
+        users: [],
+        stores: [],
+        delivery: [],
+        payroll: [],
+        promotions: [],
+    },
 }
 
 // Helper function to check if a role has access to a module

@@ -6,6 +6,7 @@ export type UserRole =
     | 'cook'
     | 'delivery'
     | 'accountant'
+    | 'external_client'
 
 export type ModuleName =
     | 'dashboard'
@@ -35,6 +36,10 @@ export interface UserProfile {
     store_id: string | null
     is_active: boolean
     modules?: ModuleName[]
+    branding_config?: {
+        client_name?: string
+        logo_url?: string
+    }
     created_at?: string
     updated_at?: string
 }

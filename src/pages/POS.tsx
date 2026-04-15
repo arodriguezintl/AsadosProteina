@@ -69,7 +69,7 @@ export default function POS() {
     const [montoRecibido, setMontoRecibido] = useState<number>(0)
     const [referenciaPago, setReferenciaPago] = useState<string>('')
     const [showPaymentModal, setShowPaymentModal] = useState(false)
-    const { user, storeId } = useAuthStore()
+    const { user, storeId, role, brandingConfig } = useAuthStore()
     const { buildTicketData } = useTicketPrint()
 
     useEffect(() => {
@@ -151,6 +151,11 @@ export default function POS() {
 
             setProducts(validProducts)
             
+            // Auto-select transfer for external clients to simplify
+            if (role === 'external_client') {
+                setSelectedPaymentMethod('transfer')
+            }
+            
             // Extract unique categories for POS tabs
             const cats = Array.from(new Set(validProducts.map(p => p.category?.name).filter(Boolean))) as string[]
             setPosCategories(cats)
@@ -187,6 +192,18 @@ export default function POS() {
             if (selectedSubCategory === 'con arroz') matchesSubCategory = n.includes('arroz')
             else if (selectedSubCategory === 'con espagueti') matchesSubCategory = n.includes('espagueti') || n.includes('spaghetti')
             else if (selectedSubCategory === 'otros') matchesSubCategory = !n.includes('arroz') && !n.includes('espagueti') && !n.includes('spaghetti')
+        }
+
+        // MVP Weekend Filter for External Clients
+        if (role === 'external_client') {
+            const isWeekend = [5, 6, 0].includes(new Date().getDay())
+            const name = (p.name || '').toLowerCase()
+            
+            // Si tiene el tag [FIN-DE-SEMANA] o [FIN] y no es fin de semana, ocultar
+            if ((name.includes('[fin]') || name.includes('[fin-de-semana]')) && !isWeekend) return false
+            
+            // Ocultar productos internos si tienen tag [INTERNO]
+            if (name.includes('[interno]')) return false
         }
 
         return matchesSearch && matchesCategory && matchesSubCategory
@@ -286,7 +303,8 @@ export default function POS() {
                 tax: tax,
                 discount: 0,
                 referencia_pago: (selectedPaymentMethod === 'card' || selectedPaymentMethod === 'transfer') ? referenciaPago : undefined,
-                monto_recibido: selectedPaymentMethod === 'cash' ? montoRecibido : undefined
+                monto_recibido: selectedPaymentMethod === 'cash' ? montoRecibido : undefined,
+                metadata: role === 'external_client' ? { source: 'city-ex', client_role: 'external_client' } : {}
             }
 
             const itemsData: CreateOrderItemDTO[] = finalCart.map(item => ({
@@ -403,20 +421,28 @@ export default function POS() {
                 <div className="flex-1 overflow-hidden flex flex-col">
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
                         <div className="min-w-fit">
-                            <h1 className="text-2xl font-bold whitespace-nowrap">Punto de Venta</h1>
-                            <p className="text-muted-foreground">Selecciona productos para agregar a la orden</p>
+                            <h1 className="text-2xl font-bold whitespace-nowrap">
+                                {role === 'external_client' ? `Portal de Pedidos - ${brandingConfig?.client_name}` : 'Punto de Venta'}
+                            </h1>
+                            <p className="text-muted-foreground">
+                                {role === 'external_client' ? 'Selecciona tus productos' : 'Selecciona productos para agregar a la orden'}
+                            </p>
                         </div>
                         <div className="flex flex-1 flex-wrap items-center justify-start md:justify-end gap-3 md:gap-4 min-w-[300px]">
-                            <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 bg-white" onClick={() => setShowExpenseDialog(true)}>
-                                <TrendingDown className="h-4 w-4 mr-2" />
-                                <span className="hidden sm:inline">Registrar Gasto</span>
-                                <span className="sm:hidden">Gasto</span>
-                            </Button>
-                            <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50 bg-white" onClick={handleCorteDeCaja}>
-                                <Calculator className="h-4 w-4 mr-2" />
-                                <span className="hidden sm:inline">Corte de Caja</span>
-                                <span className="sm:hidden">Corte</span>
-                            </Button>
+                            {role !== 'external_client' && (
+                                <>
+                                    <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 bg-white" onClick={() => setShowExpenseDialog(true)}>
+                                        <TrendingDown className="h-4 w-4 mr-2" />
+                                        <span className="hidden sm:inline">Registrar Gasto</span>
+                                        <span className="sm:hidden">Gasto</span>
+                                    </Button>
+                                    <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50 bg-white" onClick={handleCorteDeCaja}>
+                                        <Calculator className="h-4 w-4 mr-2" />
+                                        <span className="hidden sm:inline">Corte de Caja</span>
+                                        <span className="sm:hidden">Corte</span>
+                                    </Button>
+                                </>
+                            )}
                             <div className="flex-1 min-w-[200px] md:max-w-[300px]">
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -563,61 +589,63 @@ export default function POS() {
                         </div>
 
                         {/* Customer Selection */}
-                        <div className="pt-2">
-                            {!selectedCustomer ? (
-                                <div className="relative">
-                                    <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setShowCustomerSearch(!showCustomerSearch)}>
-                                        <User className="mr-2 h-4 w-4" /> Cliente
-                                    </Button>
-                                    {showCustomerSearch && (
-                                        <div className="absolute top-full left-0 w-full z-10 bg-background border rounded-md shadow-lg p-2 mt-1">
-                                            <Input
-                                                placeholder="Buscar cliente..."
-                                                className="mb-2 h-8"
-                                                value={customerSearch}
-                                                onChange={(e) => {
-                                                    setCustomerSearch(e.target.value)
-                                                    searchCustomers(e.target.value)
-                                                }}
-                                                autoFocus
-                                            />
-                                            <div className="max-h-40 overflow-auto space-y-1">
-                                                {customersList.map(c => (
-                                                    <div
-                                                        key={c.id}
-                                                        className="text-sm p-2 hover:bg-accent cursor-pointer rounded"
-                                                        onClick={() => {
-                                                            setSelectedCustomer(c)
-                                                            setShowCustomerSearch(false)
-                                                            setCustomerSearch('')
-                                                        }}
-                                                    >
-                                                        {c.full_name}
-                                                    </div>
-                                                ))}
-                                                {customersList.length === 0 && customerSearch.length > 2 && (
-                                                    <div className="text-xs text-muted-foreground p-2">No encontrado</div>
-                                                )}
+                        {role !== 'external_client' && (
+                            <div className="pt-2">
+                                {!selectedCustomer ? (
+                                    <div className="relative">
+                                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setShowCustomerSearch(!showCustomerSearch)}>
+                                            <User className="mr-2 h-4 w-4" /> Cliente
+                                        </Button>
+                                        {showCustomerSearch && (
+                                            <div className="absolute top-full left-0 w-full z-10 bg-background border rounded-md shadow-lg p-2 mt-1">
+                                                <Input
+                                                    placeholder="Buscar cliente..."
+                                                    className="mb-2 h-8"
+                                                    value={customerSearch}
+                                                    onChange={(e) => {
+                                                        setCustomerSearch(e.target.value)
+                                                        searchCustomers(e.target.value)
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <div className="max-h-40 overflow-auto space-y-1">
+                                                    {customersList.map(c => (
+                                                        <div
+                                                            key={c.id}
+                                                            className="text-sm p-2 hover:bg-accent cursor-pointer rounded"
+                                                            onClick={() => {
+                                                                setSelectedCustomer(c)
+                                                                setShowCustomerSearch(false)
+                                                                setCustomerSearch('')
+                                                            }}
+                                                        >
+                                                            {c.full_name}
+                                                        </div>
+                                                    ))}
+                                                    {customersList.length === 0 && customerSearch.length > 2 && (
+                                                        <div className="text-xs text-muted-foreground p-2">No encontrado</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center justify-between p-2 bg-secondary/30 rounded-md">
+                                        <div className="text-sm">
+                                            <div className="font-semibold">{selectedCustomer.full_name.split(' ')[0]}</div>
+                                            <div className="text-xs text-orange-600 font-bold">
+                                                {orderType === 'delivery'
+                                                    ? `Delivery: ${selectedCustomer.delivery_sales_count || 0}/5`
+                                                    : `Pickup: ${selectedCustomer.pickup_sales_count || 0}/5`}
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-2 bg-secondary/30 rounded-md">
-                                    <div className="text-sm">
-                                        <div className="font-semibold">{selectedCustomer.full_name.split(' ')[0]}</div>
-                                        <div className="text-xs text-orange-600 font-bold">
-                                            {orderType === 'delivery'
-                                                ? `Delivery: ${selectedCustomer.delivery_sales_count || 0}/5`
-                                                : `Pickup: ${selectedCustomer.pickup_sales_count || 0}/5`}
-                                        </div>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedCustomer(null)}>
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedCustomer(null)}>
-                                        <Minus className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden p-0">
                         <ScrollArea className="h-full px-6">
