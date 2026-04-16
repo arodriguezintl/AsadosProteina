@@ -88,7 +88,7 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true)
     const [activeId, setActiveId] = useState<string | null>(null)
 
-    const { storeId } = useAuthStore()
+    const { storeId, role } = useAuthStore()
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -136,11 +136,19 @@ export default function OrdersPage() {
                 }
             }
 
+            let ordersToProcess = data
+            if (role === 'external_client') {
+                ordersToProcess = data.filter(order => (order.metadata as any)?.source === 'city-ex')
+            }
+
             if (hasAutoCompleted) {
                 const refreshedData = await OrderService.getKanbanOrders(storeId)
-                setOrders(refreshedData)
+                const finalData = role === 'external_client' 
+                    ? refreshedData.filter(order => (order.metadata as any)?.source === 'city-ex')
+                    : refreshedData
+                setOrders(finalData)
             } else {
-                setOrders(data)
+                setOrders(ordersToProcess)
             }
         } catch (error) {
             console.error('Error loading orders:', error)

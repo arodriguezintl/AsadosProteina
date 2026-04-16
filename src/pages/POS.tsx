@@ -548,9 +548,11 @@ export default function POS() {
                                         <CardContent className="p-3 pt-1">
                                             <div className="flex items-center justify-between">
                                                 <div className="text-base font-bold text-primary">${product.sale_price?.toFixed(2)}</div>
-                                                <div className={`text-xs ${product.current_stock <= product.min_stock ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
-                                                    Stock: {product.current_stock}
-                                                </div>
+                                                {role !== 'external_client' && (
+                                                    <div className={`text-xs ${product.current_stock <= product.min_stock ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
+                                                        Stock: {product.current_stock}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="text-xs text-muted-foreground mt-0.5">{product.category?.name}</div>
                                         </CardContent>

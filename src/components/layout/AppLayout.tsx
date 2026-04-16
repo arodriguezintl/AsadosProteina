@@ -217,8 +217,8 @@ export function AppLayout() {
                 </div>
             </main>
 
-            {/* Modales globales */}
-            {stockAlert.isOpen && (
+            {/* Modales globales - Ocultos para clientes externos */}
+            {stockAlert.isOpen && role !== 'external_client' && (
                 <LowStockAlertModal
                     products={stockAlert.lowStockProducts}
                     onClose={stockAlert.dismiss}
