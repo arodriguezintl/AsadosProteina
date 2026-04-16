@@ -24,7 +24,13 @@ export default function Login() {
             if (error) {
                 alert('Error al ingresar: ' + error.message)
             } else {
-                navigate('/dashboard')
+                // Get the updated role from the store state
+                const currentRole = useAuthStore.getState().role
+                if (currentRole === 'external_client') {
+                    navigate('/pos')
+                } else {
+                    navigate('/dashboard')
+                }
             }
         } catch (err: any) {
             alert('Error inesperado: ' + err.message)
