@@ -88,7 +88,8 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true)
     const [activeId, setActiveId] = useState<string | null>(null)
 
-    const { storeId, role } = useAuthStore()
+    const { storeId, role, user } = useAuthStore()
+    const isCityEx = user?.email?.toLowerCase() === 'cityex@hotel.com'
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -137,8 +138,11 @@ export default function OrdersPage() {
             }
 
             let ordersToProcess = data
-            if (role === 'external_client') {
-                ordersToProcess = data.filter(order => (order.metadata as any)?.source === 'city-ex')
+            if (isCityEx || role === 'external_client') {
+                ordersToProcess = data.filter(order => {
+                    const meta = order.metadata as any;
+                    return meta?.source === 'city-ex' && meta?.created_by?.toLowerCase() === user?.email?.toLowerCase();
+                })
             }
 
             if (hasAutoCompleted) {
@@ -222,50 +226,115 @@ export default function OrdersPage() {
     return (
         <div className="h-[calc(100vh-4rem)] flex flex-col gap-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold">Tablero de Pedidos</h1>
+                <h1 className="text-2xl font-bold">
+                    {isCityEx ? 'Estado de mis Pedidos' : 'Tablero de Pedidos'}
+                </h1>
                 <Button variant="outline" size="sm" onClick={loadOrders} disabled={loading}>
                     <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                     Actualizar
                 </Button>
             </div>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCorners}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                >
-                    <div className="flex gap-4 min-w-max px-4 items-start h-full pb-6">
-                        {columns.map(col => (
-                            <DroppableColumn key={col.status} id={col.status} title={col.label} icon={col.icon} color={col.color} count={getOrdersByStatus(col.status).length}>
-                                {getOrdersByStatus(col.status).map(order => (
-                                    <DraggableOrderCard key={order.id} order={order}>
-                                        <OrderCardDisplay order={order} actionButtons={renderActionButtons(order, col.status)} />
-                                    </DraggableOrderCard>
+            {isCityEx ? (
+                <div className="flex-1 overflow-y-auto pb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-1">
+                        {orders
+                            .filter(o => o.status !== 'cancelled')
+                            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                            .map(order => {
+                                const isActive = ['pending', 'preparing', 'ready'].includes(order.status)
+                                return (
+                                    <Card key={order.id} className="border-none shadow-xl bg-white dark:bg-zinc-900 group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden">
+                                        <div className={`h-1.5 w-full ${isActive ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`} />
+                                        <CardHeader className="pb-2">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-2xl font-black text-zinc-800 dark:text-zinc-100 italic">#{order.order_number}</span>
+                                                <Badge className={`rounded-full px-4 py-1 font-bold ${isActive ? 'bg-orange-100 text-orange-700 border-orange-200' : 'bg-green-100 text-green-700 border-green-200'}`} variant="outline">
+                                                    {isActive ? 'EN PROCESO' : 'COMPLETADO'}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                                                <Clock className="h-3 w-3" />
+                                                {new Date(order.created_at).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} • {new Date(order.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="pt-4">
+                                            <div className="space-y-5">
+                                                <div className="space-y-2">
+                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60">Detalle del Pedido</p>
+                                                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 space-y-3">
+                                                        {order.items?.map((item: any) => (
+                                                            <div key={item.id} className="flex justify-between items-center text-sm">
+                                                                <span className="text-zinc-600 dark:text-zinc-400 font-medium">
+                                                                    <span className="text-primary font-bold mr-1">{item.quantity}x</span> {item.product_name}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-between items-end pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                                    <div>
+                                                        <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60">Total abonado</p>
+                                                        <p className="text-2xl font-black text-primary">${Number(order.total).toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60">Servicio</p>
+                                                        <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400">{order.order_type === 'delivery' ? 'A Domicilio' : 'Para Llevar'}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )
+                            })}
+                    </div>
+                    {orders.filter(o => o.status !== 'cancelled').length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground animate-in fade-in zoom-in duration-500">
+                            <ShoppingBag className="h-16 w-16 mb-4 opacity-10" />
+                            <p className="text-xl font-medium">No tienes pedidos activos</p>
+                            <p className="text-sm opacity-60">Tus pedidos aparecerán aquí en cuanto sean registrados.</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCorners}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <div className="flex gap-4 min-w-max px-4 items-start h-full pb-6">
+                            {columns.map(col => (
+                                <DroppableColumn key={col.status} id={col.status} title={col.label} icon={col.icon} color={col.color} count={getOrdersByStatus(col.status).length}>
+                                    {getOrdersByStatus(col.status).map(order => (
+                                        <DraggableOrderCard key={order.id} order={order}>
+                                            <OrderCardDisplay order={order} actionButtons={renderActionButtons(order, col.status)} />
+                                        </DraggableOrderCard>
+                                    ))}
+                                </DroppableColumn>
+                            ))}
+
+                            {/* Completed Column */}
+                            <DroppableColumn id="completed" title="Completados" icon={CheckCircle} color="bg-gray-200/50 text-gray-800" count={getOrdersByStatus('completed').length}>
+                                {getOrdersByStatus('completed').map(order => (
+                                    <div key={order.id} className="opacity-80 scale-[0.98]">
+                                        <OrderCardDisplay order={order} />
+                                    </div>
                                 ))}
                             </DroppableColumn>
-                        ))}
+                        </div>
 
-                        {/* Completed Column */}
-                        <DroppableColumn id="completed" title="Completados" icon={CheckCircle} color="bg-gray-200/50 text-gray-800" count={getOrdersByStatus('completed').length}>
-                            {getOrdersByStatus('completed').map(order => (
-                                <div key={order.id} className="opacity-80 scale-[0.98]">
-                                    <OrderCardDisplay order={order} />
+                        <DragOverlay>
+                            {activeOrder ? (
+                                <div className="w-[300px]">
+                                    <OrderCardDisplay order={activeOrder} isOverlay={true} />
                                 </div>
-                            ))}
-                        </DroppableColumn>
-                    </div>
-
-                    <DragOverlay>
-                        {activeOrder ? (
-                            <div className="w-[300px]">
-                                <OrderCardDisplay order={activeOrder} isOverlay={true} />
-                            </div>
-                        ) : null}
-                    </DragOverlay>
-                </DndContext>
-            </div>
+                            ) : null}
+                        </DragOverlay>
+                    </DndContext>
+                </div>
+            )}
         </div>
     )
 }

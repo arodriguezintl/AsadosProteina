@@ -70,6 +70,7 @@ export default function POS() {
     const [referenciaPago, setReferenciaPago] = useState<string>('')
     const [showPaymentModal, setShowPaymentModal] = useState(false)
     const { user, storeId, role, brandingConfig } = useAuthStore()
+    const isCityEx = user?.email?.toLowerCase() === 'cityex@hotel.com'
     const { buildTicketData } = useTicketPrint()
 
     useEffect(() => {
@@ -185,9 +186,9 @@ export default function POS() {
                               (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
         const matchesCategory = selectedCategory === 'all' || p.category?.name === selectedCategory
         
-        // Sub-category logic for Asados
+        // Sub-category logic for Menu items
         let matchesSubCategory = true
-        if (selectedCategory === 'Asados' && selectedSubCategory !== 'all') {
+        if (selectedCategory === 'Menú' && selectedSubCategory !== 'all') {
             const n = (p.name || '').toLowerCase()
             if (selectedSubCategory === 'con arroz') matchesSubCategory = n.includes('arroz')
             else if (selectedSubCategory === 'con espagueti') matchesSubCategory = n.includes('espagueti') || n.includes('spaghetti')
@@ -235,8 +236,12 @@ export default function POS() {
         })
     }
 
-    const handleCheckout = async () => {
+    const handleCheckout = async (overridePaymentMethod?: PaymentMethod) => {
         if (cart.length === 0 || !storeId) return
+
+        if (overridePaymentMethod) {
+            setSelectedPaymentMethod(overridePaymentMethod)
+        }
 
         if (selectedCustomer) {
             let qualifies = false
@@ -250,10 +255,10 @@ export default function POS() {
                 return
             }
         }
-        processCheckout(false)
+        processCheckout(false, undefined, overridePaymentMethod)
     }
 
-    const processCheckout = async (withPromo = false, overridePromoItemId?: string) => {
+    const processCheckout = async (withPromo = false, overridePromoItemId?: string, overridePaymentMethod?: PaymentMethod) => {
         if (!storeId) return
         setIsCheckingOut(true)
 
@@ -296,7 +301,7 @@ export default function POS() {
                 customer_id: selectedCustomer?.id,
                 order_type: orderType,
                 status: 'pending',
-                payment_method: selectedPaymentMethod || 'cash',
+                payment_method: overridePaymentMethod || selectedPaymentMethod || 'cash',
                 payment_status: 'paid',
                 subtotal: subtotal,
                 total: total,
@@ -382,7 +387,7 @@ export default function POS() {
                 }
 
                 const printData: any = {
-                    businessName: "ASADOS PROTEINA",
+                    businessName: "SELLIX ERP",
                     address: "CORTE DE CAJA",
                     orderNumber: "CORTE",
                     cashierEmail: `${employee.first_name} ${employee.last_name}`,
@@ -479,7 +484,7 @@ export default function POS() {
                         ))}
                     </div>
 
-                    {selectedCategory === 'Asados' && (
+                    {selectedCategory === 'Menú' && (
                         <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
                             <Button
                                 variant={selectedSubCategory === 'all' ? 'default' : 'secondary'}
@@ -697,50 +702,65 @@ export default function POS() {
                             <span>Total</span>
                             <span>${cartTotal.toFixed(2)}</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 w-full">
+                        {isCityEx ? (
                             <Button
-                                variant="outline"
-                                className={`flex-col h-20 border-green-200 transition-all duration-300 ${selectedPaymentMethod === 'cash' ? 'bg-green-600 text-white border-green-600 scale-105 shadow-lg shadow-green-200' : 'hover:bg-green-50 text-green-700'}`}
+                                className="w-full h-20 text-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-lg transition-transform hover:scale-[1.02] active:scale-95"
                                 disabled={cart.length === 0 || isCheckingOut}
-                                onClick={() => {
-                                    setSelectedPaymentMethod('cash')
-                                    setShowPaymentModal(true)
-                                }}
+                                onClick={() => handleCheckout('transfer')}
                             >
-                                <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'cash' ? 'bg-white/20' : 'bg-green-100'}`}>
-                                    <img src={cashImg} className="h-6 w-6 object-contain" alt="Efectivo" />
-                                </div>
-                                <span className="text-[10px] font-bold">Efectivo</span>
+                                {isCheckingOut ? (
+                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                ) : (
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                )}
+                                Hacer Pedido
                             </Button>
-                            <Button
-                                variant="outline"
-                                className={`flex-col h-20 border-blue-200 transition-all duration-300 ${selectedPaymentMethod === 'card' ? 'bg-blue-600 text-white border-blue-600 scale-105 shadow-lg shadow-blue-200' : 'hover:bg-blue-50 text-blue-700'}`}
-                                disabled={cart.length === 0 || isCheckingOut}
-                                onClick={() => {
-                                    setSelectedPaymentMethod('card')
-                                    setShowPaymentModal(true)
-                                }}
-                            >
-                                <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'card' ? 'bg-white/20' : 'bg-blue-100'}`}>
-                                    <img src={cardImg} className="h-6 w-6 object-contain" alt="Tarjeta" />
-                                </div>
-                                <span className="text-[10px] font-bold">Tarjeta</span>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className={`flex-col h-20 border-purple-200 transition-all duration-300 ${selectedPaymentMethod === 'transfer' ? 'bg-purple-600 text-white border-purple-600 scale-105 shadow-lg shadow-purple-200' : 'hover:bg-purple-50 text-purple-700'}`}
-                                disabled={cart.length === 0 || isCheckingOut}
-                                onClick={() => {
-                                    setSelectedPaymentMethod('transfer')
-                                    setShowPaymentModal(true)
-                                }}
-                            >
-                                <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'transfer' ? 'bg-white/20' : 'bg-purple-100'}`}>
-                                    <img src={mobileBankingImg} className="h-6 w-6 object-contain" alt="Transfer" />
-                                </div>
-                                <span className="text-[10px] font-bold">Transf.</span>
-                            </Button>
-                        </div>
+                        ) : (
+                            <div className="grid grid-cols-3 gap-2 w-full">
+                                <Button
+                                    variant="outline"
+                                    className={`flex-col h-20 border-green-200 transition-all duration-300 ${selectedPaymentMethod === 'cash' ? 'bg-green-600 text-white border-green-600 scale-105 shadow-lg shadow-green-200' : 'hover:bg-green-50 text-green-700'}`}
+                                    disabled={cart.length === 0 || isCheckingOut}
+                                    onClick={() => {
+                                        setSelectedPaymentMethod('cash')
+                                        setShowPaymentModal(true)
+                                    }}
+                                >
+                                    <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'cash' ? 'bg-white/20' : 'bg-green-100'}`}>
+                                        <img src={cashImg} className="h-6 w-6 object-contain" alt="Efectivo" />
+                                    </div>
+                                    <span className="text-[10px] font-bold">Efectivo</span>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className={`flex-col h-20 border-blue-200 transition-all duration-300 ${selectedPaymentMethod === 'card' ? 'bg-blue-600 text-white border-blue-600 scale-105 shadow-lg shadow-blue-200' : 'hover:bg-blue-50 text-blue-700'}`}
+                                    disabled={cart.length === 0 || isCheckingOut}
+                                    onClick={() => {
+                                        setSelectedPaymentMethod('card')
+                                        setShowPaymentModal(true)
+                                    }}
+                                >
+                                    <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'card' ? 'bg-white/20' : 'bg-blue-100'}`}>
+                                        <img src={cardImg} className="h-6 w-6 object-contain" alt="Tarjeta" />
+                                    </div>
+                                    <span className="text-[10px] font-bold">Tarjeta</span>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className={`flex-col h-20 border-purple-200 transition-all duration-300 ${selectedPaymentMethod === 'transfer' ? 'bg-purple-600 text-white border-purple-600 scale-105 shadow-lg shadow-purple-200' : 'hover:bg-purple-50 text-purple-700'}`}
+                                    disabled={cart.length === 0 || isCheckingOut}
+                                    onClick={() => {
+                                        setSelectedPaymentMethod('transfer')
+                                        setShowPaymentModal(true)
+                                    }}
+                                >
+                                    <div className={`p-1.5 rounded-lg mb-1 ${selectedPaymentMethod === 'transfer' ? 'bg-white/20' : 'bg-purple-100'}`}>
+                                        <img src={mobileBankingImg} className="h-6 w-6 object-contain" alt="Transfer" />
+                                    </div>
+                                    <span className="text-[10px] font-bold">Transf.</span>
+                                </Button>
+                            </div>
+                        )}
                     </CardFooter>
                 </Card>
             </div>

@@ -26,7 +26,10 @@ export const OrderService = {
             .select()
             .single()
 
-        if (orderError) throw orderError
+        if (orderError) {
+            console.error('Order creation failed:', orderError)
+            throw orderError
+        }
 
         const itemsWithRoleId = items.map(item => ({
             ...item,
@@ -38,7 +41,7 @@ export const OrderService = {
             .insert(itemsWithRoleId)
 
         if (itemsError) {
-            console.error("Error creating items, order created though:", newOrder.id)
+            console.error("Error creating items, order created though:", newOrder.id, itemsError)
             throw itemsError
         }
 

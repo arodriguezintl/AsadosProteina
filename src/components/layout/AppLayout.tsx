@@ -26,11 +26,11 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false, isExpan
             className={cn(
                 "flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group",
                 isActive
-                    ? "bg-asados-lime text-white font-extrabold shadow-md"
+                    ? "bg-primary text-white font-extrabold shadow-md"
                     : "text-white hover:bg-white/10"
             )}
         >
-            <Icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-white" : "text-white group-hover:text-asados-lime")} />
+            <Icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-white" : "text-white group-hover:text-primary")} />
             <span className={cn("text-sm font-medium whitespace-nowrap overflow-hidden transition-all duration-300",
                 !isExpanded ? "w-0 opacity-0" : "w-auto opacity-100"
             )}>{label}</span>
@@ -106,15 +106,15 @@ export function AppLayout() {
                     <div className={cn("relative flex flex-col items-center justify-center transition-all duration-300", isExpanded ? "w-full" : "w-10")}>
                         <img
                             src={brandingConfig?.logo_url || logoImage}
-                            alt={brandingConfig?.client_name || "Asados Proteina"}
-                            className={cn("h-auto object-contain transition-all duration-300", isExpanded ? "max-h-16 w-auto" : "max-h-10 w-auto")}
+                            alt={brandingConfig?.client_name || "Asados Proteína ERP"}
+                            className={cn("h-auto object-contain transition-all duration-300 rounded", isExpanded ? "max-h-16 w-auto" : "max-h-10 w-auto")}
                         />
-                        {isExpanded && <span className="text-[10px] bg-blue-500 text-white px-1 rounded shadow-sm mt-1">BETA</span>}
+                        {isExpanded && <span className="text-[10px] bg-primary text-white px-1 rounded shadow-sm mt-1">BETA</span>}
                     </div>
 
                     <div className={cn("mt-2 text-center transition-all duration-300 whitespace-nowrap overflow-hidden", !isExpanded ? "h-0 opacity-0" : "h-auto opacity-100")}>
                         <p className="text-xs text-white/60 font-medium">ERP Management</p>
-                        {storeName && <p className="text-xs text-asados-lime font-bold uppercase tracking-wider truncate px-2">{storeName}</p>}
+                        {storeName && <p className="text-xs text-primary font-bold uppercase tracking-wider truncate px-2">{storeName}</p>}
                     </div>
                 </div>
 
@@ -185,7 +185,7 @@ export function AppLayout() {
                         <DropdownMenuTrigger asChild>
                             <button className={cn("flex items-center p-3 rounded-xl hover:bg-white/5 transition group", isExpanded ? "justify-between w-full" : "justify-center w-auto")}>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-asados-lime to-orange-400 flex items-center justify-center text-asados-dark font-black text-sm">
+                                    <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center text-white font-black text-sm">
                                         {user?.email?.[0]?.toUpperCase() || 'U'}
                                     </div>
                                     <div className={cn("text-left transition-all duration-300 overflow-hidden whitespace-nowrap", !isExpanded ? "w-0 opacity-0" : "w-auto opacity-100")}>

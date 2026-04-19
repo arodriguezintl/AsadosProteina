@@ -45,22 +45,13 @@ export default function Login() {
             <div className="w-full max-w-sm">
                 <div className="text-center mb-10">
                     <div className="inline-flex flex-col items-center justify-center">
-                        <div className="relative">
-                            <h1 className="text-5xl md:text-6xl text-foreground font-script transform -rotate-6">
-                                Asados
-                            </h1>
-                            <span className="absolute -right-6 -top-2 text-primary">
-                                <svg className="w-8 h-8 md:w-10 md:h-10 fill-current" viewBox="0 0 24 24">
-                                    <path d="M12,22c4.97,0,9-4.03,9-9c0-4.97-9-13-9-13S3,8.03,3,13C3,17.97,7.03,22,12,22z M12.6,18.8 c-0.6,0.7-1.7,0.6-2.1-0.2c-0.6-1.1-1.3-2.5-0.7-4c0.1-0.2,0.3-0.3,0.5-0.2c0.2,0.1,0.3,0.4,0.2,0.6c-0.5,1.2,0,2.4,0.5,3.3 C11.2,18.7,11.9,19.2,12.6,18.8z"></path>
-                                </svg>
-                            </span>
-                        </div>
-                        <h2 className="text-2xl md:text-3xl font-bold text-primary tracking-wide -mt-2 ml-10">
-                            Proteina
-                        </h2>
+                        <img src="/src/assets/logo.jpg" alt="Asados Proteina Logo" className="h-24 w-auto mb-4 rounded-2xl shadow-lg border-2 border-orange-100" />
+                        <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase italic">
+                            Asados<span className="text-primary italic">Proteína</span>
+                        </h1>
                     </div>
-                    <p className="mt-4 text-sm text-gray-500 font-medium">
-                        Bienvenido de nuevo
+                    <p className="mt-4 text-sm text-muted-foreground font-medium">
+                        Sistema de Gestión Empresarial
                     </p>
                 </div>
 

@@ -8,15 +8,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        'asados-dark': '#1F2937',      // Dark Gray (Sidebar/Textos)
-        'asados-lime': '#F97316',      // Vibrant Orange (Acentos/Botones/KPIs)
-        'asados-bg': '#F3F4F6',        // Light Gray (Fondo General)
-        'asados-surface': '#FFFFFF',   // Blanco (Tarjetas/Widgets)
-        'asados-muted': '#6B7280',     // Gris (Textos secundarios)
+        'sellix-dark': '#0F172A',      // Slate 900 (Sidebar/Principal)
+        'sellix-accent': '#3B82F6',    // Blue 500 (Highlights/KPIs)
+        'sellix-emerald': '#10B981',   // Emerald 500 (Success/Positive)
+        'sellix-bg': '#F8FAFC',        // Slate 50 (General background)
+        'sellix-surface': '#FFFFFF',   // White (Cards)
+        'sellix-muted': '#64748B',     // Slate 500 (Muted texts)
       },
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
-        script: ['Dancing Script', 'cursive'],
+        sans: ['Outfit', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
         '3xl': '1.5rem',

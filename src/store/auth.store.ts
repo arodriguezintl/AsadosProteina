@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { type UserRole } from '@/types/database.types'
 
-const withTimeout = <T>(promise: PromiseLike<T>, ms: number = 8000): Promise<T> => {
+const withTimeout = <T>(promise: PromiseLike<T>, ms: number = 15000): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout>;
     const timeoutPromise = new Promise<T>((_, reject) => {
         timeoutId = setTimeout(() => {
