@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/auth.store'
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Mail, Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
     const [email, setEmail] = useState('')
@@ -40,92 +40,107 @@ export default function Login() {
     }
 
     return (
-        <div className="bg-background min-h-[max(884px,100dvh)] flex flex-col items-center justify-center p-6 transition-colors duration-300 font-sans text-foreground">
-            {/* Opcional: El darkMode toggle está omitido o podrías importarlo si existe en el proyecto */}
-            <div className="w-full max-w-sm">
-                <div className="text-center mb-10">
-                    <div className="inline-flex flex-col items-center justify-center">
-                        <img src="/src/assets/logo.jpg" alt="Asados Proteina Logo" className="h-24 w-auto mb-4 rounded-2xl shadow-lg border-2 border-orange-100" />
-                        <h1 className="text-4xl font-black text-zinc-900 tracking-tighter uppercase italic">
-                            Asados<span className="text-primary italic">Proteína</span>
-                        </h1>
+        <div className="bg-[#f4f6f8] text-slate-900 font-sans min-h-screen flex items-center justify-center relative overflow-hidden antialiased selection:bg-[#ff6b00]/20 selection:text-[#ff6b00]">
+            {/* Background decorative element */}
+            <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#ff6b00]/5 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#ff6b00]/5 rounded-full blur-[120px] pointer-events-none" />
+
+            <main className="relative z-10 w-full max-w-[440px] px-6 py-12">
+                {/* Glassmorphism Card (Frosted Light) */}
+                <div className="bg-white/70 backdrop-blur-[20px] rounded-2xl p-10 shadow-[0_30px_60px_rgba(0,0,0,0.08)] border border-white/60 flex flex-col items-center">
+                    
+                    {/* Brand Identity */}
+                    <div className="mb-12 flex flex-col items-center w-full">
+                        <img 
+                            src="/src/assets/logo.jpg" 
+                            alt="Asados Proteina" 
+                            className="h-28 w-auto object-contain rounded-2xl shadow-sm border border-orange-50" 
+                        />
                     </div>
-                    <p className="mt-4 text-sm text-muted-foreground font-medium">
-                        Sistema de Gestión Empresarial
-                    </p>
-                </div>
 
-                <div className="bg-white rounded-xl shadow-soft p-8 space-y-6 border border-gray-100">
-                    <form onSubmit={handleLogin} className="space-y-5">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 ml-1" htmlFor="email">
-                                Correo electrónico
-                            </label>
+                    {/* Transactional Form */}
+                    <form onSubmit={handleLogin} className="w-full space-y-10">
+                        {/* Input Fields Container */}
+                        <div className="space-y-6">
+                            
+                            {/* Email Input Group */}
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
-                                </div>
-                                <input
-                                    className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
-                                    id="email"
-                                    name="email"
-                                    placeholder="nombre@ejemplo.com"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center ml-1">
-                                <label className="text-sm font-medium text-gray-700" htmlFor="password">
-                                    Contraseña
+                                <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 mb-1" htmlFor="email">
+                                    Email Address
                                 </label>
-                            </div>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+                                <div className="relative">
+                                    <input
+                                        className="w-full bg-transparent text-slate-900 border-0 border-b border-slate-200 px-0 py-3 focus:ring-0 focus:border-[#ff6b00] focus:border-b-2 transition-all placeholder:text-slate-300 text-base"
+                                        id="email"
+                                        name="email"
+                                        placeholder="chef@asados.com"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                    />
+                                    <Mail className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-[#ff6b00] transition-colors" />
                                 </div>
-                                <input
-                                    className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all shadow-sm"
-                                    id="password"
-                                    name="password"
-                                    placeholder="••••••••"
-                                    type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
-                                    {showPassword ? (
-                                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                                    ) : (
-                                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                                    )}
+                            </div>
+
+                            {/* Password Input Group */}
+                            <div className="relative group">
+                                <div className="flex justify-between items-baseline mb-1">
+                                    <label className="block text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400" htmlFor="password">
+                                        Password
+                                    </label>
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        className="w-full bg-transparent text-slate-900 border-0 border-b border-slate-200 px-0 py-3 focus:ring-0 focus:border-[#ff6b00] focus:border-b-2 transition-all placeholder:text-slate-300 text-base tracking-widest"
+                                        id="password"
+                                        name="password"
+                                        placeholder="••••••••"
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-0 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 hover:text-slate-500 transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                                {/* Forgotten Password Link */}
+                                <div className="mt-4 text-right">
+                                    <a className="text-[11px] font-medium text-slate-400 hover:text-[#ff6b00] transition-colors inline-block pb-0.5 border-b border-transparent hover:border-[#ff6b00]/30" href="#">
+                                        Forgot password?
+                                    </a>
                                 </div>
                             </div>
                         </div>
 
-
-
-                        <button
-                            className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-lg shadow-glow text-sm font-semibold text-white bg-primary hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
-                            type="submit"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            ) : null}
-                            {loading ? 'Validando...' : 'Iniciar Sesión'}
-                        </button>
+                        {/* Primary CTA (Ember Gradient) */}
+                        <div className="pt-2">
+                            <button 
+                                className="w-full relative overflow-hidden group bg-[#ff6b00] text-white font-bold uppercase tracking-[0.15em] text-xs py-5 rounded shadow-[0_15px_30px_rgba(255,107,0,0.15)] transition-all duration-300 hover:shadow-[0_20px_40px_rgba(255,107,0,0.25)] hover:-translate-y-1 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0"
+                                type="submit"
+                                disabled={loading}
+                            >
+                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                    {loading ? 'Validando...' : 'Ingresar'}
+                                    <span className="material-symbols-outlined text-[18px]">
+                                        {loading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'login'}
+                                    </span>
+                                </span>
+                                {/* Hover Glow Effect */}
+                                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            </button>
+                        </div>
                     </form>
-
                 </div>
-            </div>
+            </main>
 
-            <div className="fixed bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-primary to-orange-600"></div>
+            {/* Subtle bottom accent line */}
+            <div className="fixed bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#ff6b00]/30 to-transparent" />
         </div>
     )
 }

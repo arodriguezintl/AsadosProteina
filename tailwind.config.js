@@ -16,7 +16,7 @@ export default {
         'sellix-muted': '#64748B',     // Slate 500 (Muted texts)
       },
       fontFamily: {
-        sans: ['Outfit', 'sans-serif'],
+        sans: ['Manrope', 'Outfit', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
