@@ -5,7 +5,7 @@ export const HRService = {
     // --- Employees ---
     async getEmployees(storeId?: string) {
         let query = supabase
-            .schema('public')
+            .schema('hr')
             .from('employees')
             .select(`
                 *,
@@ -24,7 +24,7 @@ export const HRService = {
 
     async createEmployee(employee: Partial<Employee>) {
         const { data, error } = await supabase
-            .schema('public')
+            .schema('hr')
             .from('employees')
             .insert(employee)
             .select()
@@ -36,7 +36,7 @@ export const HRService = {
 
     async updateEmployee(id: string, updates: Partial<Employee>) {
         const { data, error } = await supabase
-            .schema('public')
+            .schema('hr')
             .from('employees')
             .update(updates)
             .eq('id', id)
@@ -51,6 +51,7 @@ export const HRService = {
     async clockIn(employeeId: string, storeId: string, notes?: string) {
         // Check if already clocked in
         const { data: existing } = await supabase
+            .schema('hr')
             .from('work_shifts')
             .select('*')
             .eq('employee_id', employeeId)
@@ -60,6 +61,7 @@ export const HRService = {
         if (existing) throw new Error('Ya tienes un turno activo.')
 
         const { data, error } = await supabase
+            .schema('hr')
             .from('work_shifts')
             .insert({
                 employee_id: employeeId,
@@ -78,6 +80,7 @@ export const HRService = {
     async clockOut(employeeId: string, notes?: string) {
         // Get active shift
         const { data: shift } = await supabase
+            .schema('hr')
             .from('work_shifts')
             .select('*')
             .eq('employee_id', employeeId)
@@ -91,6 +94,7 @@ export const HRService = {
         const durationHours = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60)
 
         const { data, error } = await supabase
+            .schema('hr')
             .from('work_shifts')
             .update({
                 check_out: checkOutTime.toISOString(),
@@ -108,6 +112,7 @@ export const HRService = {
 
     async getActiveShift(employeeId: string) {
         const { data, error } = await supabase
+            .schema('hr')
             .from('work_shifts')
             .select('*')
             .eq('employee_id', employeeId)
@@ -120,6 +125,7 @@ export const HRService = {
 
     async getShifts(employeeId: string, startDate?: string, endDate?: string) {
         let query = supabase
+            .schema('hr')
             .from('work_shifts')
             .select('*')
             .eq('employee_id', employeeId)
@@ -137,6 +143,7 @@ export const HRService = {
     async generatePayroll(employeeId: string, startDate: string, endDate: string) {
         // 1. Get Employee
         const { data: employee } = await supabase
+            .schema('hr')
             .from('employees')
             .select('*')
             .eq('id', employeeId)
@@ -151,6 +158,7 @@ export const HRService = {
 
         if (employee.salary_type === 'hourly') {
             const { data: shifts } = await supabase
+                .schema('hr')
                 .from('work_shifts')
                 .select('total_hours')
                 .eq('employee_id', employeeId)
@@ -170,6 +178,7 @@ export const HRService = {
 
         // 3. Create Draft Payroll
         const { data: payroll, error } = await supabase
+            .schema('hr')
             .from('payrolls')
             .insert({
                 employee_id: employeeId,
@@ -190,6 +199,7 @@ export const HRService = {
 
     async getPayrolls(storeId: string) {
         const { data, error } = await supabase
+            .schema('hr')
             .from('payrolls')
             .select(`
                 *,
