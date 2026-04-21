@@ -49,15 +49,18 @@ export const HRService = {
 
     // --- Time Tracking ---
     async clockIn(employeeId: string, storeId: string, notes?: string) {
-        // Check if already clocked in
-        const { data: existing } = await supabase
+        // Check if already clocked in using maybeSingle/limit to avoid 406 if multiple ghost shifts exist
+        const { data: existingList, error: checkError } = await supabase
             .from('work_shifts')
             .select('*')
             .eq('employee_id', employeeId)
             .is('check_out', null)
-            .single()
 
-        if (existing) throw new Error('Ya tienes un turno activo.')
+        if (checkError) console.error("Error checking active shifts:", checkError)
+
+        if (existingList && existingList.length > 0) {
+            throw new Error('Ya tienes un turno activo.')
+        }
 
         const { data, error } = await supabase
             .from('work_shifts')
@@ -76,15 +79,17 @@ export const HRService = {
     },
 
     async clockOut(employeeId: string, notes?: string) {
-        // Get active shift
-        const { data: shift } = await supabase
+        // Get active shift (handle multiple by taking the first one to close it)
+        const { data: shifts } = await supabase
             .from('work_shifts')
             .select('*')
             .eq('employee_id', employeeId)
             .is('check_out', null)
-            .single()
+            .order('check_in', { ascending: false })
 
-        if (!shift) throw new Error('No tienes un turno activo.')
+        if (!shifts || shifts.length === 0) throw new Error('No tienes un turno activo.')
+        
+        const shift = shifts[0] // Close the most recent active shift
 
         const checkOutTime = new Date()
         const checkInTime = new Date(shift.check_in)
@@ -103,6 +108,14 @@ export const HRService = {
             .single()
 
         if (error) throw error
+        
+        // If there are ghost shifts left, close them silently
+        if (shifts.length > 1) {
+             for (let i = 1; i < shifts.length; i++) {
+                 await supabase.from('work_shifts').update({ check_out: checkOutTime.toISOString(), status: 'completed' }).eq('id', shifts[i].id)
+             }
+        }
+        
         return data as WorkShift
     },
 
@@ -112,10 +125,11 @@ export const HRService = {
             .select('*')
             .eq('employee_id', employeeId)
             .is('check_out', null)
-            .single()
+            .order('check_in', { ascending: false })
+            .limit(1)
 
-        if (error && error.code !== 'PGRST116') throw error // Ignore 'No rows found'
-        return data as WorkShift | null
+        if (error) console.error("Error al buscar turno activo:", error)
+        return data && data.length > 0 ? (data[0] as WorkShift) : null
     },
 
     async getShifts(employeeId: string, startDate?: string, endDate?: string) {
