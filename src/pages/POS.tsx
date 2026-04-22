@@ -71,6 +71,9 @@ export default function POS() {
     const [showPaymentModal, setShowPaymentModal] = useState(false)
     const { user, storeId, role, brandingConfig } = useAuthStore()
     const isCityEx = user?.email?.toLowerCase() === 'cityex@hotel.com'
+    const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false)
+    const [newCustomerName, setNewCustomerName] = useState('')
+    const [isCreatingCustomer, setIsCreatingCustomer] = useState(false)
     const { buildTicketData } = useTicketPrint()
 
     useEffect(() => {
@@ -165,6 +168,27 @@ export default function POS() {
             console.error('Error loading products:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleCreateCustomer = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!storeId || !newCustomerName.trim()) return
+        setIsCreatingCustomer(true)
+        try {
+            const newCustomer = await CustomerService.createCustomer({
+                full_name: newCustomerName,
+                store_id: storeId
+            })
+            setSelectedCustomer(newCustomer)
+            setShowNewCustomerDialog(false)
+            setNewCustomerName('')
+            toast.success('Cliente agregado correctamente')
+        } catch (error: any) {
+            toast.error('Error al agregar cliente')
+            console.error(error)
+        } finally {
+            setIsCreatingCustomer(false)
         }
     }
 
@@ -576,33 +600,36 @@ export default function POS() {
                             Orden Actual
                         </CardTitle>
                         {/* Order Type Toggle */}
-                        <div className="flex gap-2 pt-2">
-                            <Button
-                                variant={orderType === 'pickup' ? 'default' : 'outline'}
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => setOrderType('pickup')}
-                            >
-                                Para Llevar
-                            </Button>
-                            <Button
-                                variant={orderType === 'delivery' ? 'default' : 'outline'}
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => setOrderType('delivery')}
-                            >
-                                Delivery
-                            </Button>
-                        </div>
+                        {!isCityEx && (
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    variant={orderType === 'pickup' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => setOrderType('pickup')}
+                                >
+                                    Para Llevar
+                                </Button>
+                                <Button
+                                    variant={orderType === 'delivery' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => setOrderType('delivery')}
+                                >
+                                    Delivery
+                                </Button>
+                            </div>
+                        )}
 
                         {/* Customer Selection */}
-                        {role !== 'external_client' && (
+                        {(role !== 'external_client' || isCityEx) && (
                             <div className="pt-2">
                                 {!selectedCustomer ? (
-                                    <div className="relative">
-                                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setShowCustomerSearch(!showCustomerSearch)}>
-                                            <User className="mr-2 h-4 w-4" /> Cliente
-                                        </Button>
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setShowCustomerSearch(!showCustomerSearch)}>
+                                                <User className="mr-2 h-4 w-4" /> Cliente
+                                            </Button>
                                         {showCustomerSearch && (
                                             <div className="absolute top-full left-0 w-full z-10 bg-background border rounded-md shadow-lg p-2 mt-1">
                                                 <Input
@@ -634,6 +661,18 @@ export default function POS() {
                                                     )}
                                                 </div>
                                             </div>
+                                        )}
+                                        </div>
+                                        {isCityEx && (
+                                            <Button 
+                                                variant="outline" 
+                                                size="icon" 
+                                                className="h-9 w-9 shrink-0" 
+                                                onClick={() => setShowNewCustomerDialog(true)}
+                                                title="Agregar nombre al pedido"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </Button>
                                         )}
                                     </div>
                                 ) : (
@@ -987,6 +1026,40 @@ export default function POS() {
                             Confirmar Pago
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* New Customer Dialog */}
+            <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
+                        <DialogDescription>
+                            Ingresa el nombre de la persona que realiza el pedido.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateCustomer} className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Nombre Completo</Label>
+                            <Input
+                                id="name"
+                                placeholder="Ej. Juan Pérez"
+                                value={newCustomerName}
+                                onChange={(e) => setNewCustomerName(e.target.value)}
+                                required
+                                autoFocus
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => setShowNewCustomerDialog(false)}>
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={isCreatingCustomer || !newCustomerName.trim()}>
+                                {isCreatingCustomer ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Guardar y Seleccionar
+                            </Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
         </>
