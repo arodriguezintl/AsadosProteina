@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, ShoppingCart, Loader2, Search, Calculator, TrendingDown, ImageOff } from 'lucide-react'
+import { Plus, Minus, ShoppingCart, Loader2, Search, Calculator, TrendingDown, ImageOff, Store, Bike, Utensils, Truck, User } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'react-toastify'
 import { ProductService } from '@/services/product.service'
 import { ReportService } from '@/services/report.service'
 import { OrderService } from '@/services/order.service'
+import { StoreService } from '@/services/store.service'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,7 +20,6 @@ import type { Customer } from '@/types/customers'
 import type { FinanceCategory } from '@/types/finance'
 import { CustomerService } from '@/services/customer.service'
 import { FinanceService } from '@/services/finance.service'
-import { User } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { useTicketPrint } from '@/hooks/useTicketPrint'
 import { PrintService } from '@/services/print.service'
@@ -49,6 +49,7 @@ export default function POS() {
     const [showCustomerSearch, setShowCustomerSearch] = useState(false)
     const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup')
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
+    const customerSearchRef = useRef<HTMLDivElement>(null)
     const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all')
     const [posCategories, setPosCategories] = useState<string[]>([])
     const [showPromoDialog, setShowPromoDialog] = useState(false)
@@ -69,12 +70,31 @@ export default function POS() {
     const [montoRecibido, setMontoRecibido] = useState<number>(0)
     const [referenciaPago, setReferenciaPago] = useState<string>('')
     const [showPaymentModal, setShowPaymentModal] = useState(false)
+    const [channel, setChannel] = useState<string>('mostrador')
+    const [deliveryFee, setDeliveryFee] = useState<number>(0)
     const { user, storeId, role, brandingConfig } = useAuthStore()
     const isCityEx = user?.email?.toLowerCase() === 'cityex@hotel.com'
     const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false)
     const [newCustomerName, setNewCustomerName] = useState('')
     const [isCreatingCustomer, setIsCreatingCustomer] = useState(false)
     const { buildTicketData } = useTicketPrint()
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (customerSearchRef.current && !customerSearchRef.current.contains(event.target as Node)) {
+                setShowCustomerSearch(false)
+                setCustomerSearch('')
+            }
+        }
+
+        if (showCustomerSearch) {
+            document.addEventListener('mousedown', handleClickOutside)
+        }
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [showCustomerSearch])
 
     useEffect(() => {
         if (storeId) {
@@ -317,6 +337,8 @@ export default function POS() {
                 }
             })
 
+            total += (deliveryFee || 0)
+
             const orderNumber = await OrderService.generateOrderNumber(storeId)
 
             const orderData: CreateOrderDTO = {
@@ -324,6 +346,8 @@ export default function POS() {
                 order_number: orderNumber,
                 customer_id: selectedCustomer?.id,
                 order_type: orderType,
+                channel: channel,
+                delivery_fee: deliveryFee,
                 status: 'pending',
                 payment_method: overridePaymentMethod || selectedPaymentMethod || 'cash',
                 payment_status: 'paid',
@@ -352,7 +376,10 @@ export default function POS() {
                 })
             }
 
-            const ticketData = buildTicketData(orderNumber, finalCart, tax, selectedCustomer, orderType)
+            // Get store data for printing
+            const storeData = await StoreService.getStoreById(storeId)
+
+            const ticketData = buildTicketData(orderNumber, finalCart, tax, selectedCustomer, orderType, storeData, deliveryFee)
             PrintService.printTicket(ticketData)
 
             setCart([])
@@ -441,7 +468,8 @@ export default function POS() {
         }
     }
 
-    const cartTotal = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
+    const cartSubtotal = cart.reduce((sum, item) => sum + ((item.product.sale_price || 0) * item.quantity), 0)
+    const cartTotal = cartSubtotal + (deliveryFee || 0)
 
     return (
         <>
@@ -594,104 +622,146 @@ export default function POS() {
 
                 {/* Cart Sidebar */}
                 <Card className="w-[350px] flex flex-col h-full">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShoppingCart className="h-5 w-5" />
-                            Orden Actual
-                        </CardTitle>
-                        {/* Order Type Toggle */}
-                        {!isCityEx && (
-                            <div className="flex gap-2 pt-2">
-                                <Button
-                                    variant={orderType === 'pickup' ? 'default' : 'outline'}
-                                    size="sm"
-                                    className="flex-1"
-                                    onClick={() => setOrderType('pickup')}
-                                >
-                                    Para Llevar
-                                </Button>
-                                <Button
-                                    variant={orderType === 'delivery' ? 'default' : 'outline'}
-                                    size="sm"
-                                    className="flex-1"
-                                    onClick={() => setOrderType('delivery')}
-                                >
-                                    Delivery
-                                </Button>
+                    <CardHeader className="p-3">
+                        <div className="flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-1 shrink-0">
+                                <ShoppingCart className="h-4 w-4 text-primary" />
+                                <span className="font-bold text-sm hidden sm:inline">Orden</span>
                             </div>
-                        )}
 
-                        {/* Customer Selection */}
-                        {(role !== 'external_client' || isCityEx) && (
-                            <div className="pt-2">
-                                {!selectedCustomer ? (
-                                    <div className="flex gap-2">
-                                        <div className="relative flex-1">
-                                            <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setShowCustomerSearch(!showCustomerSearch)}>
-                                                <User className="mr-2 h-4 w-4" /> Cliente
-                                            </Button>
-                                        {showCustomerSearch && (
-                                            <div className="absolute top-full left-0 w-full z-10 bg-background border rounded-md shadow-lg p-2 mt-1">
-                                                <Input
-                                                    placeholder="Buscar cliente..."
-                                                    className="mb-2 h-8"
-                                                    value={customerSearch}
-                                                    onChange={(e) => {
-                                                        setCustomerSearch(e.target.value)
-                                                        searchCustomers(e.target.value)
-                                                    }}
-                                                    autoFocus
-                                                />
-                                                <div className="max-h-40 overflow-auto space-y-1">
-                                                    {customersList.map(c => (
-                                                        <div
-                                                            key={c.id}
-                                                            className="text-sm p-2 hover:bg-accent cursor-pointer rounded"
-                                                            onClick={() => {
-                                                                setSelectedCustomer(c)
-                                                                setShowCustomerSearch(false)
-                                                                setCustomerSearch('')
-                                                            }}
-                                                        >
-                                                            {c.full_name}
-                                                        </div>
-                                                    ))}
-                                                    {customersList.length === 0 && customerSearch.length > 2 && (
-                                                        <div className="text-xs text-muted-foreground p-2">No encontrado</div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                        </div>
-                                        {isCityEx && (
-                                            <Button 
-                                                variant="outline" 
-                                                size="icon" 
-                                                className="h-9 w-9 shrink-0" 
-                                                onClick={() => setShowNewCustomerDialog(true)}
-                                                title="Agregar nombre al pedido"
-                                            >
-                                                <Plus className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between p-2 bg-secondary/30 rounded-md">
-                                        <div className="text-sm">
-                                            <div className="font-semibold">{selectedCustomer.full_name.split(' ')[0]}</div>
-                                            <div className="text-xs text-orange-600 font-bold">
-                                                {orderType === 'delivery'
-                                                    ? `Delivery: ${selectedCustomer.delivery_sales_count || 0}/5`
-                                                    : `Pickup: ${selectedCustomer.pickup_sales_count || 0}/5`}
-                                            </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedCustomer(null)}>
-                                            <Minus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                )}
+                            <div className="flex gap-1 flex-1 justify-end">
+                                <Button
+                                    variant={channel === 'mostrador' && orderType === 'pickup' ? 'default' : 'outline'}
+                                    size="icon"
+                                    className="h-10 w-10 flex flex-col gap-0.5 p-0"
+                                    onClick={() => {
+                                        setChannel('mostrador')
+                                        setOrderType('pickup')
+                                        setDeliveryFee(0)
+                                    }}
+                                    title="Para Llevar"
+                                >
+                                    <Store className="h-4 w-4" />
+                                    <span className="text-[8px] font-bold">POS</span>
+                                </Button>
+                                <Button
+                                    variant={channel === 'mostrador' && orderType === 'delivery' ? 'default' : 'outline'}
+                                    size="icon"
+                                    className="h-10 w-10 flex flex-col gap-0.5 p-0"
+                                    onClick={() => {
+                                        setChannel('mostrador')
+                                        setOrderType('delivery')
+                                    }}
+                                    title="Delivery Propio"
+                                >
+                                    <Truck className="h-4 w-4" />
+                                    <span className="text-[8px] font-bold">Dely</span>
+                                </Button>
+                                <Button
+                                    variant={channel === 'uber' ? 'default' : 'outline'}
+                                    size="icon"
+                                    className="h-10 w-10 flex flex-col gap-0.5 p-0 border-green-200"
+                                    onClick={() => {
+                                        setChannel('uber')
+                                        setOrderType('delivery')
+                                        setDeliveryFee(0)
+                                    }}
+                                    title="Uber Eats"
+                                >
+                                    <Bike className="h-4 w-4 text-green-600" />
+                                    <span className="text-[8px] font-bold">Uber</span>
+                                </Button>
+                                <Button
+                                    variant={channel === 'didi' ? 'default' : 'outline'}
+                                    size="icon"
+                                    className="h-10 w-10 flex flex-col gap-0.5 p-0 border-orange-200"
+                                    onClick={() => {
+                                        setChannel('didi')
+                                        setOrderType('delivery')
+                                        setDeliveryFee(0)
+                                    }}
+                                    title="Didi Food"
+                                >
+                                    <Utensils className="h-4 w-4 text-orange-600" />
+                                    <span className="text-[8px] font-bold">Didi</span>
+                                </Button>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Secondary Row: Customer & Delivery Fee */}
+                        <div className="flex gap-1 mt-2">
+                            {(role !== 'external_client' || isCityEx) && (
+                                <div className="flex-1">
+                                    {!selectedCustomer ? (
+                                        <div className="flex gap-1">
+                                            <div className="relative flex-1" ref={customerSearchRef}>
+                                                <Button variant="outline" size="sm" className="w-full justify-start h-8 text-[10px] px-2" onClick={() => setShowCustomerSearch(!showCustomerSearch)}>
+                                                    <User className="mr-1 h-3 w-3" /> Cliente
+                                                </Button>
+                                                {showCustomerSearch && (
+                                                    <div className="absolute top-full left-0 w-full z-20 bg-background border rounded-md shadow-lg p-2 mt-1">
+                                                        <Input
+                                                            placeholder="Buscar..."
+                                                            className="mb-2 h-7 text-xs"
+                                                            value={customerSearch}
+                                                            onChange={(e) => {
+                                                                setCustomerSearch(e.target.value)
+                                                                searchCustomers(e.target.value)
+                                                            }}
+                                                            autoFocus
+                                                        />
+                                                        <div className="max-h-40 overflow-auto space-y-1">
+                                                            {customersList.map(c => (
+                                                                <div
+                                                                    key={c.id}
+                                                                    className="text-xs p-1.5 hover:bg-accent cursor-pointer rounded"
+                                                                    onClick={() => {
+                                                                        setSelectedCustomer(c)
+                                                                        setShowCustomerSearch(false)
+                                                                        setCustomerSearch('')
+                                                                    }}
+                                                                >
+                                                                    {c.full_name}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-between px-2 h-8 bg-primary/5 rounded-md border border-primary/20">
+                                            <div className="text-[10px] flex gap-2 items-center">
+                                                <span className="font-bold truncate max-w-[80px]">{selectedCustomer.full_name.split(' ')[0]}</span>
+                                                <span className="text-orange-600 font-black">
+                                                    {orderType === 'delivery' ? `D:${selectedCustomer.delivery_sales_count || 0}/5` : `P:${selectedCustomer.pickup_sales_count || 0}/5`}
+                                                </span>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setSelectedCustomer(null)}>
+                                                <Minus className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {orderType === 'delivery' && channel === 'mostrador' && (
+                                <div className="w-[100px] shrink-0">
+                                    <Select value={String(deliveryFee)} onValueChange={(v) => setDeliveryFee(Number(v))}>
+                                        <SelectTrigger className="h-8 text-[10px] px-2">
+                                            <SelectValue placeholder="Envío" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">$0</SelectItem>
+                                            <SelectItem value="25">$25</SelectItem>
+                                            <SelectItem value="35">$35</SelectItem>
+                                            <SelectItem value="50">$50</SelectItem>
+                                            <SelectItem value="75">$75</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden p-0">
                         <ScrollArea className="h-full px-6">

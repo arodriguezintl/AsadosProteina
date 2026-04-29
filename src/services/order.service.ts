@@ -249,5 +249,90 @@ export const OrderService = {
             ...order,
             item_count: order.items?.length || 0
         }))
+    },
+
+    async cancelOrder(orderId: string, userId: string, reason: string) {
+        // 1. Get order items
+        const { data: items, error: itemsError } = await supabase
+            .from('order_items')
+            .select('*')
+            .eq('order_id', orderId)
+
+        if (itemsError) throw itemsError
+
+        // 2. Restore stock for each item
+        for (const item of items) {
+            await ProductService.addStock(
+                item.product_id,
+                item.quantity,
+                0, // cost not needed for return
+                userId,
+                `Cancelación de orden ${orderId}: ${reason}`,
+                orderId,
+                'return'
+            )
+        }
+
+        // 3. Update order status
+        const { error: updateError } = await supabase
+            .from('orders')
+            .update({
+                status: 'cancelled',
+                notes: reason ? `Cancelado: ${reason}` : 'Cancelado'
+            })
+            .eq('id', orderId)
+
+        if (updateError) throw updateError
+    },
+
+    async returnItems(orderId: string, itemIds: string[], userId: string, reason: string) {
+        // 1. Get items to return
+        const { data: items, error: itemsError } = await supabase
+            .from('order_items')
+            .select('*')
+            .in('id', itemIds)
+
+        if (itemsError) throw itemsError
+
+        // 2. Restore stock and mark as returned
+        for (const item of items) {
+            await ProductService.addStock(
+                item.product_id,
+                item.quantity,
+                0,
+                userId,
+                `Devolución de item en orden ${orderId}: ${reason}`,
+                orderId,
+                'return'
+            )
+
+            // We update the quantity to 0 to "remove" it from the order effectively while keeping the record
+            await supabase
+                .from('order_items')
+                .update({
+                    quantity: 0,
+                    notes: `Devuelto: ${reason}`
+                })
+                .eq('id', item.id)
+        }
+
+        // 3. Recalculate order totals
+        const { data: remainingItems } = await supabase
+            .from('order_items')
+            .select('subtotal')
+            .eq('order_id', orderId)
+
+        const newSubtotal = remainingItems?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0
+        // Simple logic for tax/total adjustment
+        const newTotal = newSubtotal // assuming no tax for now or tax included
+
+        await supabase
+            .from('orders')
+            .update({
+                subtotal: newSubtotal,
+                total: newTotal,
+                notes: `Devolución parcial procesada: ${reason}`
+            })
+            .eq('id', orderId)
     }
 }

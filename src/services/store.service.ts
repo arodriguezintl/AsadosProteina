@@ -10,6 +10,8 @@ export interface Store {
     is_active: boolean
     opening_time: string | null
     closing_time: string | null
+    ticket_header: string | null
+    ticket_footer: string | null
     created_at?: string
 }
 
@@ -63,5 +65,16 @@ export const StoreService = {
             .eq('id', id)
 
         if (error) throw error
+    },
+
+    async getStoreById(id: string) {
+        const { data, error } = await supabase
+            .from('stores')
+            .select('*')
+            .eq('id', id)
+            .single()
+
+        if (error) throw error
+        return data
     }
 }

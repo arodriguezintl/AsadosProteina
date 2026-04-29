@@ -16,8 +16,11 @@ export interface TicketData {
     items: TicketItem[]
     subtotal: number
     tax: number
+    delivery_fee?: number
     total: number
     currency: string    // "MXN"
+    header?: string
+    footer?: string
     customer?: {
         fullName: string
         loyaltyPoints: number

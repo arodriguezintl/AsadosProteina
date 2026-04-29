@@ -3,6 +3,7 @@ import { StoreService } from '@/services/store.service'
 import { UserService } from '@/services/user.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -21,6 +22,8 @@ interface StoreData {
     is_active: boolean
     opening_time: string | null
     closing_time: string | null
+    ticket_header: string | null
+    ticket_footer: string | null
     manager?: {
         full_name: string
     }
@@ -41,6 +44,8 @@ export default function StoresPage() {
         manager_id: 'none',
         opening_time: '',
         closing_time: '',
+        ticket_header: '',
+        ticket_footer: '',
         is_active: true
     })
 
@@ -107,6 +112,8 @@ export default function StoresPage() {
             manager_id: 'none',
             opening_time: '',
             closing_time: '',
+            ticket_header: '',
+            ticket_footer: '',
             is_active: true
         })
         setIsDialogOpen(true)
@@ -122,6 +129,8 @@ export default function StoresPage() {
             manager_id: store.manager_id || 'none',
             opening_time: store.opening_time || '',
             closing_time: store.closing_time || '',
+            ticket_header: store.ticket_header || '',
+            ticket_footer: store.ticket_footer || '',
             is_active: store.is_active
         })
         setIsDialogOpen(true)
@@ -139,6 +148,8 @@ export default function StoresPage() {
                 manager_id: formData.manager_id === 'none' ? null : formData.manager_id,
                 opening_time: formData.opening_time || null,
                 closing_time: formData.closing_time || null,
+                ticket_header: formData.ticket_header || null,
+                ticket_footer: formData.ticket_footer || null,
                 is_active: formData.is_active
             } as any
 
@@ -184,90 +195,125 @@ export default function StoresPage() {
                             <Plus className="mr-2 h-4 w-4" /> Nueva Tienda
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>{selectedStore ? 'Editar Tienda' : 'Nueva Tienda'}</DialogTitle>
                             <DialogDescription>Información de la sucursal</DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Nombre</Label>
-                                    <Input
-                                        required
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder="Sucursal Centro"
-                                    />
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-8">
+                                {/* Left Column: Branch Data */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Datos de la Sucursal</h3>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Nombre</Label>
+                                            <Input
+                                                required
+                                                value={formData.name}
+                                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                placeholder="Sucursal Centro"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Código (Único)</Label>
+                                            <Input
+                                                required
+                                                value={formData.code}
+                                                onChange={e => setFormData({ ...formData, code: e.target.value })}
+                                                placeholder="SUC-01"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Dirección</Label>
+                                        <Input
+                                            required
+                                            value={formData.address}
+                                            onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                            placeholder="Av. Principal #123"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Teléfono</Label>
+                                            <Input
+                                                value={formData.phone}
+                                                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                                placeholder="(442) 123-4567"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Gerente</Label>
+                                            <Select
+                                                value={formData.manager_id}
+                                                onValueChange={(v) => setFormData({ ...formData, manager_id: v })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Seleccionar gerente" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Sin asignar</SelectItem>
+                                                    {managers.map(m => (
+                                                        <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Hora Apertura</Label>
+                                            <Input
+                                                type="time"
+                                                value={formData.opening_time}
+                                                onChange={e => setFormData({ ...formData, opening_time: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Hora Cierre</Label>
+                                            <Input
+                                                type="time"
+                                                value={formData.closing_time}
+                                                onChange={e => setFormData({ ...formData, closing_time: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label>Código (Único)</Label>
-                                    <Input
-                                        required
-                                        value={formData.code}
-                                        onChange={e => setFormData({ ...formData, code: e.target.value })}
-                                        placeholder="SUC-01"
-                                    />
+
+                                {/* Right Column: Ticket Config */}
+                                <div className="space-y-4 border-l pl-8">
+                                    <h3 className="text-sm font-bold text-blue-600 uppercase tracking-wider">Configuración de Ticket</h3>
+                                    
+                                    <div className="space-y-2">
+                                        <Label>Encabezado del Ticket</Label>
+                                        <Textarea
+                                            value={formData.ticket_header}
+                                            onChange={e => setFormData({ ...formData, ticket_header: e.target.value })}
+                                            placeholder="Nombre Comercial, Eslogan o Mensaje de Bienvenida"
+                                            rows={4}
+                                            className="resize-none"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground italic">Aparecerá al inicio de cada ticket impreso.</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Pie de Página</Label>
+                                        <Textarea
+                                            value={formData.ticket_footer}
+                                            onChange={e => setFormData({ ...formData, ticket_footer: e.target.value })}
+                                            placeholder="Información de facturación, redes sociales o agradecimiento"
+                                            rows={4}
+                                            className="resize-none"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground italic">Aparecerá al final de cada ticket impreso.</p>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="space-y-2">
-                                <Label>Dirección</Label>
-                                <Input
-                                    required
-                                    value={formData.address}
-                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                    placeholder="Av. Principal #123"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Teléfono</Label>
-                                    <Input
-                                        value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                        placeholder="(442) 123-4567"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Gerente</Label>
-                                    <Select
-                                        value={formData.manager_id}
-                                        onValueChange={(v) => setFormData({ ...formData, manager_id: v })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar gerente" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Sin asignar</SelectItem>
-                                            {managers.map(m => (
-                                                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Hora Apertura</Label>
-                                    <Input
-                                        type="time"
-                                        value={formData.opening_time}
-                                        onChange={e => setFormData({ ...formData, opening_time: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Hora Cierre</Label>
-                                    <Input
-                                        type="time"
-                                        value={formData.closing_time}
-                                        onChange={e => setFormData({ ...formData, closing_time: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-
                             <DialogFooter>
                                 <Button type="submit" disabled={submitting}>
                                     {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

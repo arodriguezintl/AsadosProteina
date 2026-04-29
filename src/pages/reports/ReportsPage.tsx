@@ -6,12 +6,21 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, DollarSign, ShoppingBag, TrendingUp, Store as StoreIcon, FileSpreadsheet, FileText, Printer, ChevronLeft, ChevronRight } from 'lucide-react'
+import { 
+    TrendingUp, ShoppingBag, 
+    Loader2, Printer, ChevronLeft, ChevronRight, Store as StoreIcon, RotateCcw,
+    DollarSign, FileSpreadsheet, FileText
+} from 'lucide-react'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { exportToExcel, exportToPDF } from '@/utils/export'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { ResponsiveContainer } from 'recharts'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RestockReport } from './RestockReport'
+import { PieChart, Pie, Cell, Legend, Tooltip } from 'recharts'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { toast } from 'react-toastify'
+import { OrderService } from '@/services/order.service'
 import { getMexicoDayString, getMexicoStartOfDayISO, getMexicoEndOfDayISO } from '@/utils/date'
 import { PDFDownloadLink } from '@react-pdf/renderer'
 import { SalesReportDocument } from '@/components/reports/SalesReportDocument'
@@ -39,8 +48,16 @@ export default function ReportsPage() {
     const [valuation, setValuation] = useState({ totalValuation: 0, productCount: 0 })
     const [storeComparison, setStoreComparison] = useState<any[]>([])
     const [ordersList, setOrdersList] = useState<any[]>([])
+    const [channelSales, setChannelSales] = useState<any[]>([])
     const [currentPage, setCurrentPage] = useState(1)
+    const [showReturnDialog, setShowReturnDialog] = useState(false)
+    const [selectedOrder, setSelectedOrder] = useState<any>(null)
+    const [returnReason, setReturnReason] = useState('')
+    const [selectedItems, setSelectedItems] = useState<string[]>([])
+    const [isCancelling, setIsCancelling] = useState(false)
+    const { user } = useAuthStore()
     const ITEMS_PER_PAGE = 10
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658']
 
     const { buildTicketData } = useTicketPrint()
 
@@ -80,6 +97,7 @@ export default function ReportsPage() {
                 promises.push(ReportService.getSalesReport(targetStoreId, start, end))
                 promises.push(ReportService.getTopProducts(targetStoreId, start, end, 5))
                 promises.push(ReportService.getInventoryValuation(targetStoreId))
+                promises.push(ReportService.getSalesByChannel(targetStoreId, start, end))
             } else if (isSuperAdmin && selectedStoreId === 'all') {
                 promises.push(ReportService.getSalesByStore(start, end))
             }
@@ -91,6 +109,7 @@ export default function ReportsPage() {
                 setOrdersList(results[0].orders || [])
                 setTopProducts(results[1])
                 setValuation(results[2])
+                setChannelSales(results[3])
                 setStoreComparison([])
             } else if (isSuperAdmin && selectedStoreId === 'all') {
                 const comparison = results[0]
@@ -106,7 +125,8 @@ export default function ReportsPage() {
                 setValuation({ totalValuation: 0, productCount: 0 })
             }
         } catch (error) {
-            console.error('Error loading reports:', error)
+            console.error('Error loading reports details:', JSON.stringify(error, null, 2))
+            console.error('Full Error Object:', error)
         } finally {
             setLoading(false)
         }
@@ -346,22 +366,31 @@ export default function ReportsPage() {
                                 {/* Recent Activity or Chart Placeholder */}
                                 <Card className="col-span-1">
                                     <CardHeader>
-                                        <CardTitle>Resumen por Producto</CardTitle>
+                                        <CardTitle>Ventas por Canal</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="h-[300px] flex items-center justify-center border-dashed border-2 rounded-md bg-muted/20">
-                                        {topProducts.length === 0 ? (
-                                            <p className="text-muted-foreground">Sin datos suficientes</p>
+                                    <CardContent className="h-[300px] flex items-center justify-center">
+                                        {channelSales.length === 0 ? (
+                                            <p className="text-muted-foreground">Sin datos de canales</p>
                                         ) : (
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={topProducts} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                                    <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                                                    <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                                                    <Tooltip
-                                                        formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Venta Total']}
-                                                        labelFormatter={(label) => `Producto: ${label}`}
-                                                    />
-                                                    <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                                                </BarChart>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={channelSales}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        labelLine={false}
+                                                        outerRadius={80}
+                                                        fill="#8884d8"
+                                                        dataKey="value"
+                                                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                                    >
+                                                        {channelSales.map((_entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
+                                                    <Legend />
+                                                </PieChart>
                                             </ResponsiveContainer>
                                         )}
                                     </CardContent>
@@ -408,12 +437,14 @@ export default function ReportsPage() {
                                                                     `🏦 Transf. ${order.referencia_pago ? `(${order.referencia_pago})` : ''}`}
                                                         </TableCell>
                                                         <TableCell className="text-right font-bold">${Number(order.total).toFixed(2)}</TableCell>
-                                                        <TableCell className="text-center">
+                                                        <TableCell className="text-center flex gap-2 justify-center">
                                                             <Button
                                                                 variant="outline"
-                                                                size="sm"
-                                                                className="h-8 px-2 text-xs border-orange-200 text-orange-700 hover:bg-orange-50"
-                                                                onClick={() => {
+                                                                size="icon"
+                                                                className="h-8 w-8 border-orange-200 text-orange-700 hover:bg-orange-50"
+                                                                title="Reimprimir Ticket"
+                                                                onClick={async () => {
+                                                                    const storeData = await StoreService.getStoreById(order.store_id)
                                                                     const ticketData = buildTicketData(
                                                                         order.order_number,
                                                                         order.items?.map((item: any) => ({
@@ -422,14 +453,30 @@ export default function ReportsPage() {
                                                                         })) || [],
                                                                         order.tax || 0,
                                                                         order.customer || null,
-                                                                        order.order_type
+                                                                        order.order_type,
+                                                                        storeData,
+                                                                        order.delivery_fee
                                                                     )
                                                                     PrintService.printTicket(ticketData)
                                                                 }}
                                                             >
-                                                                <Printer className="h-3.5 w-3.5 mr-1" />
-                                                                Reimprimir
+                                                                <Printer className="h-4 w-4" />
                                                             </Button>
+                                                            {order.status !== 'cancelled' && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 border-red-200 text-red-700 hover:bg-red-50"
+                                                                    title="Procesar Devolución"
+                                                                    onClick={() => {
+                                                                        setSelectedOrder(order)
+                                                                        setSelectedItems(order.items?.map((i: any) => i.id) || [])
+                                                                        setShowReturnDialog(true)
+                                                                    }}
+                                                                >
+                                                                    <RotateCcw className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -477,6 +524,99 @@ export default function ReportsPage() {
                     </TabsContent>
                 </Tabs>
             )}
+
+            {/* Return/Cancellation Dialog */}
+            <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Procesar Devolución / Cancelación</DialogTitle>
+                        <DialogDescription>
+                            Orden: {selectedOrder?.order_number} - Total: ${Number(selectedOrder?.total).toFixed(2)}
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label>Motivo de la Devolución</Label>
+                            <Input 
+                                placeholder="Ej: Error en pedido, producto dañado..." 
+                                value={returnReason}
+                                onChange={e => setReturnReason(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Seleccionar Items a Devolver</Label>
+                            <div className="border rounded-md divide-y max-h-40 overflow-auto">
+                                {selectedOrder?.items?.map((item: any) => (
+                                    <div key={item.id} className="p-2 flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selectedItems.includes(item.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) setSelectedItems([...selectedItems, item.id])
+                                                    else setSelectedItems(selectedItems.filter(id => id !== item.id))
+                                                }}
+                                            />
+                                            <span>{item.product?.name} x{item.quantity}</span>
+                                        </div>
+                                        <span className="font-bold">${Number(item.subtotal).toFixed(2)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic">
+                                * Se restaurará el stock de los productos seleccionados.
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                        <Button 
+                            variant="destructive" 
+                            className="flex-1"
+                            disabled={isCancelling || !returnReason}
+                            onClick={async () => {
+                                if (!confirm('¿Seguro que deseas CANCELAR toda la orden? Esto restaurará el stock de TODO.')) return
+                                setIsCancelling(true)
+                                try {
+                                    await OrderService.cancelOrder(selectedOrder.id, user?.id || '', returnReason)
+                                    toast.success('Orden cancelada correctamente')
+                                    setShowReturnDialog(false)
+                                    loadReports()
+                                } catch (e) {
+                                    toast.error('Error al cancelar orden')
+                                } finally {
+                                    setIsCancelling(false)
+                                }
+                            }}
+                        >
+                            {isCancelling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Cancelar Orden Completa
+                        </Button>
+                        <Button 
+                            variant="default" 
+                            className="flex-1"
+                            disabled={isCancelling || selectedItems.length === 0 || !returnReason}
+                            onClick={async () => {
+                                setIsCancelling(true)
+                                try {
+                                    await OrderService.returnItems(selectedOrder.id, selectedItems, user?.id || '', returnReason)
+                                    toast.success('Devolución parcial procesada')
+                                    setShowReturnDialog(false)
+                                    loadReports()
+                                } catch (e) {
+                                    toast.error('Error al procesar devolución')
+                                } finally {
+                                    setIsCancelling(false)
+                                }
+                            }}
+                        >
+                            Devolución Parcial
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

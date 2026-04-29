@@ -169,7 +169,7 @@ export const ProductService = {
         return data as Product[]
     },
 
-    async addStock(productId: string, quantity: number, unitCost: number, userId: string, notes?: string) {
+    async addStock(productId: string, quantity: number, unitCost: number, userId: string, notes?: string, referenceId?: string, type: 'entry' | 'return' | 'adjustment' = 'entry') {
         // 1. Get current product
         const { data: product, error: pError } = await supabase
             .from('inventory_products')
@@ -185,12 +185,13 @@ export const ProductService = {
             .insert({
                 store_id: product.store_id,
                 product_id: productId,
-                type: 'entry',
+                type: type,
                 quantity: quantity,
                 previous_stock: product.current_stock,
                 new_stock: product.current_stock + quantity,
                 cost_per_unit: unitCost,
                 notes: notes,
+                reference_id: referenceId,
                 created_by: userId
             })
 

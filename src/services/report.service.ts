@@ -4,26 +4,33 @@ export const ReportService = {
     async getSalesReport(storeId: string, startDate: string, endDate: string) {
         const { data, error } = await supabase
             .from('orders')
-            .select('*')
+            .select(`
+                *,
+                customer:customers(*),
+                items:order_items(
+                    *,
+                    product:inventory_products(name)
+                )
+            `)
             .eq('store_id', storeId)
             .gte('created_at', startDate)
             .lte('created_at', endDate)
-            .neq('status', 'cancelled')
 
         if (error) throw error
 
-        // If data is null (shouldn't be with select * unless error), default to empty
         const orders = data || []
 
-        const totalSales = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0)
-        const totalOrders = orders.length
+        // Calculate sales excluding cancelled orders for the summary
+        const validOrders = orders.filter(o => o.status !== 'cancelled')
+        const totalSales = validOrders.reduce((sum, order) => sum + (Number(order.total) || 0), 0)
+        const totalOrders = validOrders.length
         const avgTicket = totalOrders > 0 ? totalSales / totalOrders : 0
 
         return {
             totalSales,
             totalOrders,
             avgTicket,
-            orders
+            orders // return all orders (including cancelled) for the list
         }
     },
 
@@ -34,12 +41,12 @@ export const ReportService = {
             .select(`
                 *,
                 product:inventory_products(name),
-                order:orders!inner(store_id, created_at, status)
+                orders!inner(store_id, created_at, status)
             `)
-            .eq('order.store_id', storeId)
-            .gte('order.created_at', startDate)
-            .lte('order.created_at', endDate)
-            .neq('order.status', 'cancelled')
+            .eq('orders.store_id', storeId)
+            .gte('orders.created_at', startDate)
+            .lte('orders.created_at', endDate)
+            .not('orders.status', 'eq', 'cancelled')
 
         if (itemsError) throw itemsError
         const productStats: Record<string, { name: string, quantity: number, revenue: number }> = {}
@@ -95,10 +102,10 @@ export const ReportService = {
         // Fetch all orders in range
         const { data: orders, error } = await supabase
             .from('orders')
-            .select('store_id, total, created_at, status, store:stores(name)')
+            .select('store_id, total, created_at, status, stores(name)')
             .gte('created_at', startDate)
             .lte('created_at', endDate)
-            .neq('status', 'cancelled')
+            .not('status', 'eq', 'cancelled')
 
         if (error) throw error
 
@@ -113,7 +120,7 @@ export const ReportService = {
             if (!storeStats[storeId]) {
                 storeStats[storeId] = {
                     id: storeId,
-                    name: order.store?.name || 'Tienda Desconocida',
+                    name: (Array.isArray(order.stores) ? order.stores[0]?.name : order.stores?.name) || 'Tienda Desconocida',
                     totalSales: 0,
                     totalOrders: 0
                 }
@@ -165,5 +172,44 @@ export const ReportService = {
         })
 
         return weeklyStats
+    },
+
+    async getSalesByChannel(storeId: string, startDate: string, endDate: string) {
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                id,
+                channel,
+                total,
+                status,
+                customer:customers(full_name)
+            `)
+            .eq('store_id', storeId)
+            .gte('created_at', startDate)
+            .lte('created_at', endDate)
+            .neq('status', 'cancelled')
+
+        if (error) throw error
+
+        const channelStats: Record<string, { name: string, value: number, count: number }> = {}
+
+        data?.forEach((order: any) => {
+            let channel = order.channel || 'Mostrador'
+            
+            // Normalize channel names
+            const channelKey = channel.charAt(0).toUpperCase() + channel.slice(1).toLowerCase()
+
+            if (!channelStats[channelKey]) {
+                channelStats[channelKey] = {
+                    name: channelKey,
+                    value: 0,
+                    count: 0
+                }
+            }
+            channelStats[channelKey].value += Number(order.total)
+            channelStats[channelKey].count += 1
+        })
+
+        return Object.values(channelStats).sort((a, b) => b.value - a.value)
     }
 }

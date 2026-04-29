@@ -32,6 +32,8 @@ export interface Order {
     payment_status: PaymentStatus
     notes?: string
     referencia_pago?: string
+    channel?: string
+    delivery_fee?: number
     monto_recibido?: number
     created_by?: string
     metadata?: Record<string, any>

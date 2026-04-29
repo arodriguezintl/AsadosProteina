@@ -22,7 +22,9 @@ export function useTicketPrint() {
         cart: CartItem[],
         tax: number,
         customer: Customer | null,
-        orderType: 'pickup' | 'delivery'
+        orderType: 'pickup' | 'delivery',
+        store?: any,
+        deliveryFee?: number
     ): TicketData {
         const now = new Date()
         const pad = (n: number) => String(n).padStart(2, '0')
@@ -35,13 +37,14 @@ export function useTicketPrint() {
             lineTotal: (item.product.sale_price ?? 0) * item.quantity,
         }))
 
-        const total = cart.reduce((sum, item) => sum + ((item.product.sale_price ?? 0) * item.quantity), 0)
-        const subtotal = total - tax
+        const subtotal = cart.reduce((sum, item) => sum + ((item.product.sale_price ?? 0) * item.quantity), 0)
+        const total = subtotal + (deliveryFee ?? 0)
 
         return {
             businessName: BUSINESS_NAME,
-            address: BUSINESS_ADDRESS,
-            phone: BUSINESS_PHONE,
+            header: store?.ticket_header,
+            address: store?.address || BUSINESS_ADDRESS,
+            phone: store?.phone || BUSINESS_PHONE,
             orderNumber,
             cashierEmail: user?.email ?? 'Sistema ERP',
             orderDate,
@@ -50,8 +53,10 @@ export function useTicketPrint() {
             items,
             subtotal,
             tax,
+            delivery_fee: deliveryFee,
             total,
             currency: 'MXN',
+            footer: store?.ticket_footer,
             customer: customer
                 ? {
                     fullName: customer.full_name,

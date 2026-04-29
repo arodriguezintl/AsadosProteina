@@ -49,6 +49,7 @@ function buildTicketHTML(data: TicketData): string {
       <img src="${window.location.origin}/logo.jpg" alt="Logo" style="width: 80px; height: auto; display: block; margin: 0 auto; filter: grayscale(100%);" />
     </div>
     <div class="brand">${data.businessName}</div>
+    ${data.header ? `<div style="font-size: 14px; margin-bottom: 4px;">${data.header.split('\n').join('<br>')}</div>` : ''}
     ${data.address ? `<div>${data.address}</div>` : ''}
     ${data.phone ? `<div>Tel: ${data.phone}</div>` : ''}
   </div>
@@ -78,6 +79,9 @@ function buildTicketHTML(data: TicketData): string {
   <div class="line"></div>
   <div class="totals">
     <div class="row"><span>SUBTOTAL:</span><span>$${data.subtotal.toFixed(2)}</span></div>
+    ${data.delivery_fee && data.delivery_fee > 0
+      ? `<div class="row"><span>ENVÍO:</span><span>$${data.delivery_fee.toFixed(2)}</span></div>`
+      : ''}
     ${data.tax > 0
       ? `<div class="row"><span>IVA (16%):</span><span>$${data.tax.toFixed(2)}</span></div>`
       : `<div class="row"><span>IVA:</span><span>$0.00</span></div>`}
@@ -92,8 +96,10 @@ function buildTicketHTML(data: TicketData): string {
 
   <div class="line"></div>
   <div class="footer">
-    <div>¡Gracias por tu compra!</div>
-    <div>Solicita tu factura por WhatsApp</div>
+    ${data.footer 
+      ? `<div>${data.footer.split('\n').join('<br>')}</div>`
+      : `<div>¡Gracias por tu compra!</div><div>Solicita tu factura por WhatsApp</div>`
+    }
   </div>
 </body>
 </html>`
