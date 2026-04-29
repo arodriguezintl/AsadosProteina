@@ -89,6 +89,13 @@ export const FinanceService = {
 
         if (ordersError) throw ordersError
 
+        const { data: payrolls, error: payrollError } = await supabase
+            .from('payrolls')
+            .select('total_paid')
+            .eq('store_id', storeId)
+
+        if (payrollError) throw payrollError
+
         const transactionIncome = transactions
             ?.filter(t => t.type === 'income')
             .reduce((sum, t) => sum + Number(t.amount), 0) || 0
@@ -100,13 +107,20 @@ export const FinanceService = {
         const salesIncome = orders
             ?.reduce((sum, o) => sum + Number(o.total), 0) || 0
 
+        const payrollExpenses = payrolls
+            ?.reduce((sum, p) => sum + Number(p.total_paid), 0) || 0
+
         const totalIncome = transactionIncome + salesIncome
-        const totalExpenses = transactionExpenses
+        const totalExpenses = transactionExpenses + payrollExpenses
 
         return {
             income: totalIncome,
             expenses: totalExpenses,
-            balance: totalIncome - totalExpenses
+            balance: totalIncome - totalExpenses,
+            salesIncome,
+            transactionIncome,
+            payrollExpenses,
+            otherExpenses: transactionExpenses
         }
     },
 

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { ReportService } from '@/services/report.service'
 import { StoreService } from '@/services/store.service'
+import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -11,13 +12,14 @@ import {
     Loader2, Printer, ChevronLeft, ChevronRight, Store as StoreIcon, RotateCcw,
     DollarSign, FileSpreadsheet, FileText
 } from 'lucide-react'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { subDays } from 'date-fns'
 import { exportToExcel, exportToPDF } from '@/utils/export'
 import { ResponsiveContainer } from 'recharts'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RestockReport } from './RestockReport'
 import { PieChart, Pie, Cell, Legend, Tooltip } from 'recharts'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { toast } from 'react-toastify'
 import { OrderService } from '@/services/order.service'
@@ -27,19 +29,21 @@ import { SalesReportDocument } from '@/components/reports/SalesReportDocument'
 import { useAuthStore } from '@/store/auth.store'
 import { useTicketPrint } from '@/hooks/useTicketPrint'
 import { PrintService } from '@/services/print.service'
+import { formatNumber } from '@/utils/format'
 
 export default function ReportsPage() {
     const [loading, setLoading] = useState(true)
     const [dateRange, setDateRange] = useState({
-        start: getMexicoDayString(startOfMonth(new Date())),
-        end: getMexicoDayString(endOfMonth(new Date()))
+        start: getMexicoDayString(new Date()),
+        end: getMexicoDayString(new Date())
     })
+    const [selectedPill, setSelectedPill] = useState<'hoy' | '7d' | '30d'>('hoy')
 
     const { role, storeId: userStoreId } = useAuthStore()
     const isSuperAdmin = role === 'super_admin'
 
     // Filter state
-    const [selectedStoreId, setSelectedStoreId] = useState<string | 'all'>('all')
+    const [selectedStoreId, setSelectedStoreId] = useState<string | 'all'>('00000000-0000-0000-0000-000000000001')
     const [storesList, setStoresList] = useState<any[]>([])
 
     // Stats
@@ -48,7 +52,7 @@ export default function ReportsPage() {
     const [valuation, setValuation] = useState({ totalValuation: 0, productCount: 0 })
     const [storeComparison, setStoreComparison] = useState<any[]>([])
     const [ordersList, setOrdersList] = useState<any[]>([])
-    const [channelSales, setChannelSales] = useState<any[]>([])
+    const [paymentMethodSales, setPaymentMethodSales] = useState<any[]>([])
     const [currentPage, setCurrentPage] = useState(1)
     const [showReturnDialog, setShowReturnDialog] = useState(false)
     const [selectedOrder, setSelectedOrder] = useState<any>(null)
@@ -58,8 +62,17 @@ export default function ReportsPage() {
     const { user } = useAuthStore()
     const ITEMS_PER_PAGE = 10
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658']
+    
+    const REASON_TAGS = [
+        "No vendido",
+        "Producto dañado",
+        "Cliente insatisfecho",
+        "Demora excesiva",
+        "Falta de insumos"
+    ]
 
     const { buildTicketData } = useTicketPrint()
+
 
     useEffect(() => {
         if (isSuperAdmin) {
@@ -86,6 +99,7 @@ export default function ReportsPage() {
 
     const loadReports = async () => {
         setLoading(true)
+        console.log('Loading reports for:', { selectedStoreId, dateRange })
         try {
             const start = getMexicoStartOfDayISO(dateRange.start)
             const end = getMexicoEndOfDayISO(dateRange.end)
@@ -97,7 +111,7 @@ export default function ReportsPage() {
                 promises.push(ReportService.getSalesReport(targetStoreId, start, end))
                 promises.push(ReportService.getTopProducts(targetStoreId, start, end, 5))
                 promises.push(ReportService.getInventoryValuation(targetStoreId))
-                promises.push(ReportService.getSalesByChannel(targetStoreId, start, end))
+                promises.push(ReportService.getSalesByPaymentMethod(targetStoreId, start, end))
             } else if (isSuperAdmin && selectedStoreId === 'all') {
                 promises.push(ReportService.getSalesByStore(start, end))
             }
@@ -109,7 +123,7 @@ export default function ReportsPage() {
                 setOrdersList(results[0].orders || [])
                 setTopProducts(results[1])
                 setValuation(results[2])
-                setChannelSales(results[3])
+                setPaymentMethodSales(results[3])
                 setStoreComparison([])
             } else if (isSuperAdmin && selectedStoreId === 'all') {
                 const comparison = results[0]
@@ -130,6 +144,24 @@ export default function ReportsPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handlePillChange = (pill: 'hoy' | '7d' | '30d') => {
+        setSelectedPill(pill)
+        const end = new Date()
+        let start = new Date()
+
+        if (pill === '7d') {
+            start = subDays(end, 6)
+        } else if (pill === '30d') {
+            start = subDays(end, 29)
+        }
+        // 'hoy' leaves start = end
+
+        setDateRange({
+            start: getMexicoDayString(start),
+            end: getMexicoDayString(end)
+        })
     }
 
     return (
@@ -155,23 +187,27 @@ export default function ReportsPage() {
                         </Select>
                     )}
 
-                    <div className="flex items-center gap-2 bg-card p-1 rounded-md border shadow-sm">
-                        <Input
-                            type="date"
-                            value={dateRange.start}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                            className="w-auto h-8 border-none"
-                        />
-                        <span className="text-muted-foreground">-</span>
-                        <Input
-                            type="date"
-                            value={dateRange.end}
-                            onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                            className="w-auto h-8 border-none"
-                        />
-                        <Button size="sm" variant="ghost" onClick={loadReports} disabled={loading}>
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Filtrar'}
-                        </Button>
+                    <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl border border-slate-200 shadow-sm">
+                        {[
+                            { id: 'hoy', label: 'Hoy' },
+                            { id: '7d', label: '7d' },
+                            { id: '30d', label: '30d' }
+                        ].map((pill) => (
+                            <Button
+                                key={pill.id}
+                                variant={selectedPill === pill.id ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => handlePillChange(pill.id as any)}
+                                className={cn(
+                                    "h-8 px-4 rounded-lg font-bold transition-all",
+                                    selectedPill === pill.id 
+                                        ? "bg-primary text-white shadow-md shadow-primary/20 scale-105" 
+                                        : "text-muted-foreground hover:bg-slate-100"
+                                )}
+                            >
+                                {pill.label}
+                            </Button>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -196,7 +232,7 @@ export default function ReportsPage() {
                                     <DollarSign className="h-4 w-4 text-green-600" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-green-600">${salesStats.totalSales.toFixed(2)}</div>
+                                    <div className="text-2xl font-bold text-green-600">${formatNumber(salesStats.totalSales)}</div>
                                     <p className="text-xs text-muted-foreground">En el periodo seleccionado</p>
                                 </CardContent>
                             </Card>
@@ -216,7 +252,7 @@ export default function ReportsPage() {
                                     <TrendingUp className="h-4 w-4 text-orange-600" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">${salesStats.avgTicket.toFixed(2)}</div>
+                                    <div className="text-2xl font-bold">${formatNumber(salesStats.avgTicket)}</div>
                                     <p className="text-xs text-muted-foreground">Promedio por orden</p>
                                 </CardContent>
                             </Card>
@@ -226,7 +262,7 @@ export default function ReportsPage() {
                                     <DollarSign className="h-4 w-4 text-purple-600" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-purple-600">${valuation.totalValuation.toFixed(2)}</div>
+                                    <div className="text-2xl font-bold text-purple-600">${formatNumber(valuation.totalValuation)}</div>
                                     <p className="text-xs text-muted-foreground">Costo actual almacenado</p>
                                 </CardContent>
                             </Card>
@@ -259,7 +295,7 @@ export default function ReportsPage() {
                                             onClick={() => exportToPDF(
                                                 'Ventas por Tienda',
                                                 ['Tienda', 'Pedidos', 'Ventas Totales ($)', 'Ticket Promedio ($)'],
-                                                storeComparison.map(s => [s.name, s.totalOrders, s.totalSales.toFixed(2), (s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0).toFixed(2)]),
+                                                storeComparison.map(s => [s.name, s.totalOrders, formatNumber(s.totalSales), formatNumber(s.totalOrders > 0 ? s.totalSales / s.totalOrders : 0)]),
                                                 `Ventas_Por_Tienda_${dateRange.start}_al_${dateRange.end}`
                                             )}
                                         >
@@ -282,8 +318,8 @@ export default function ReportsPage() {
                                                 <TableRow key={store.id}>
                                                     <TableCell className="font-medium">{store.name}</TableCell>
                                                     <TableCell className="text-right">{store.totalOrders}</TableCell>
-                                                    <TableCell className="text-right font-bold text-green-600">${store.totalSales.toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">${(store.totalOrders > 0 ? store.totalSales / store.totalOrders : 0).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right font-bold text-green-600">${formatNumber(store.totalSales)}</TableCell>
+                                                    <TableCell className="text-right">${formatNumber(store.totalOrders > 0 ? store.totalSales / store.totalOrders : 0)}</TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -354,7 +390,7 @@ export default function ReportsPage() {
                                                         <TableRow key={idx}>
                                                             <TableCell className="font-medium">{product.name}</TableCell>
                                                             <TableCell className="text-right">{product.quantity}</TableCell>
-                                                            <TableCell className="text-right">${product.revenue.toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right">${formatNumber(product.revenue)}</TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
@@ -366,32 +402,80 @@ export default function ReportsPage() {
                                 {/* Recent Activity or Chart Placeholder */}
                                 <Card className="col-span-1">
                                     <CardHeader>
-                                        <CardTitle>Ventas por Canal</CardTitle>
+                                        <CardTitle>Ventas por Método de Pago</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="h-[300px] flex items-center justify-center">
-                                        {channelSales.length === 0 ? (
-                                            <p className="text-muted-foreground">Sin datos de canales</p>
-                                        ) : (
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <PieChart>
-                                                    <Pie
-                                                        data={channelSales}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        labelLine={false}
-                                                        outerRadius={80}
-                                                        fill="#8884d8"
-                                                        dataKey="value"
-                                                        label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                                                    >
-                                                        {channelSales.map((_entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    <CardContent className="space-y-6">
+                                        <div className="h-[250px]">
+                                            {paymentMethodSales.length === 0 ? (
+                                                <div className="h-full flex items-center justify-center">
+                                                    <p className="text-muted-foreground">Sin datos de métodos de pago</p>
+                                                </div>
+                                            ) : (
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={paymentMethodSales}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            labelLine={false}
+                                                            outerRadius={80}
+                                                            fill="#8884d8"
+                                                            dataKey="value"
+                                                            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                                        >
+                                                            {paymentMethodSales.map((_entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip formatter={(value) => `$${formatNumber(Number(value))}`} />
+                                                        <Legend />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            )}
+                                        </div>
+
+                                        {paymentMethodSales.length > 0 && (
+                                            <div className="border rounded-lg overflow-hidden">
+                                                <Table>
+                                                    <TableHeader className="bg-muted/50">
+                                                        <TableRow>
+                                                            <TableHead className="h-9">Método</TableHead>
+                                                            <TableHead className="text-right h-9">Ventas</TableHead>
+                                                            <TableHead className="text-right h-9">Pedidos</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {paymentMethodSales.map((item, idx) => (
+                                                            <TableRow key={idx}>
+                                                                <TableCell className="py-2">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div 
+                                                                            className="w-3 h-3 rounded-full" 
+                                                                            style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                                                                        />
+                                                                        {item.name}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-right py-2 font-medium">
+                                                                    ${formatNumber(item.value)}
+                                                                </TableCell>
+                                                                <TableCell className="text-right py-2 text-muted-foreground">
+                                                                    {item.count}
+                                                                </TableCell>
+                                                            </TableRow>
                                                         ))}
-                                                    </Pie>
-                                                    <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
-                                                    <Legend />
-                                                </PieChart>
-                                            </ResponsiveContainer>
+                                                        <TableRow className="bg-muted/30 font-bold">
+                                                            <TableCell className="py-2">Total</TableCell>
+                                                            <TableCell className="text-right py-2">
+                                                                ${formatNumber(paymentMethodSales.reduce((sum, item) => sum + item.value, 0))}
+                                                            </TableCell>
+                                                            <TableCell className="text-right py-2">
+                                                                {paymentMethodSales.reduce((sum, item) => sum + item.count, 0)}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
                                         )}
                                     </CardContent>
                                 </Card>
@@ -436,7 +520,7 @@ export default function ReportsPage() {
                                                                 order.payment_method === 'card' ? `💳 Tarjeta ${order.referencia_pago ? `(****${order.referencia_pago})` : ''}` :
                                                                     `🏦 Transf. ${order.referencia_pago ? `(${order.referencia_pago})` : ''}`}
                                                         </TableCell>
-                                                        <TableCell className="text-right font-bold">${Number(order.total).toFixed(2)}</TableCell>
+                                                        <TableCell className="text-right font-bold">${formatNumber(Number(order.total))}</TableCell>
                                                         <TableCell className="text-center flex gap-2 justify-center">
                                                             <Button
                                                                 variant="outline"
@@ -527,54 +611,109 @@ export default function ReportsPage() {
 
             {/* Return/Cancellation Dialog */}
             <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Procesar Devolución / Cancelación</DialogTitle>
-                        <DialogDescription>
-                            Orden: {selectedOrder?.order_number} - Total: ${Number(selectedOrder?.total).toFixed(2)}
-                        </DialogDescription>
-                    </DialogHeader>
+                <DialogContent className="sm:max-w-[550px] bg-white dark:bg-zinc-950 border-none shadow-2xl p-0 overflow-hidden rounded-3xl">
+                    <div className="bg-primary/5 p-6 border-b border-primary/10">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl font-black italic flex items-center gap-2">
+                                <RotateCcw className="h-6 w-6 text-primary" />
+                                PROCESAR DEVOLUCIÓN
+                            </DialogTitle>
+                            <DialogDescription className="text-sm font-medium opacity-70">
+                                Orden: <span className="font-mono font-bold text-primary">{selectedOrder?.order_number}</span> • Total Original: <span className="font-bold">${formatNumber(Number(selectedOrder?.total))}</span>
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
                     
-                    <div className="py-4 space-y-4">
-                        <div className="space-y-2">
-                            <Label>Motivo de la Devolución</Label>
-                            <Input 
-                                placeholder="Ej: Error en pedido, producto dañado..." 
+                    <div className="p-6 space-y-6">
+                        <div className="space-y-3">
+                            <Label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Motivo de la Devolución</Label>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {REASON_TAGS.map(tag => (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        onClick={() => setReturnReason(tag)}
+                                        className={cn(
+                                            "text-[10px] font-bold px-3 py-1 rounded-full border transition-all",
+                                            returnReason === tag 
+                                                ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
+                                                : "bg-muted/50 text-muted-foreground border-transparent hover:border-primary/30"
+                                        )}
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                            <Textarea 
+                                placeholder="Describe el motivo detalladamente..." 
                                 value={returnReason}
                                 onChange={e => setReturnReason(e.target.value)}
+                                className="min-h-[80px] bg-muted/30 border-none rounded-2xl resize-none focus-visible:ring-primary/30"
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Seleccionar Items a Devolver</Label>
-                            <div className="border rounded-md divide-y max-h-40 overflow-auto">
-                                {selectedOrder?.items?.map((item: any) => (
-                                    <div key={item.id} className="p-2 flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={selectedItems.includes(item.id)}
-                                                onChange={(e) => {
-                                                    if (e.target.checked) setSelectedItems([...selectedItems, item.id])
-                                                    else setSelectedItems(selectedItems.filter(id => id !== item.id))
-                                                }}
-                                            />
-                                            <span>{item.product?.name} x{item.quantity}</span>
+                        <div className="space-y-3">
+                            <Label className="text-[10px] uppercase tracking-widest font-bold opacity-50">Items a Devolver</Label>
+                            <div className="bg-muted/20 rounded-2xl border border-muted/30 overflow-hidden max-h-48">
+                                <div className="divide-y divide-muted/30 overflow-y-auto max-h-48 scrollbar-hide">
+                                    {selectedOrder?.items?.map((item: any) => (
+                                        <div key={item.id} className="p-3 flex items-center justify-between group hover:bg-primary/5 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative flex items-center justify-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        id={`item-${item.id}`}
+                                                        checked={selectedItems.includes(item.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) setSelectedItems([...selectedItems, item.id])
+                                                            else setSelectedItems(selectedItems.filter(id => id !== item.id))
+                                                        }}
+                                                        className="h-5 w-5 rounded-md border-2 border-primary/20 checked:bg-primary transition-all cursor-pointer accent-primary"
+                                                    />
+                                                </div>
+                                                <label htmlFor={`item-${item.id}`} className="cursor-pointer">
+                                                    <p className="text-sm font-bold">{item.product?.name}</p>
+                                                    <p className="text-[10px] text-muted-foreground">Cantidad: {item.quantity}</p>
+                                                </label>
+                                            </div>
+                                            <span className="font-mono font-bold text-sm">${formatNumber(Number(item.subtotal))}</span>
                                         </div>
-                                        <span className="font-bold">${Number(item.subtotal).toFixed(2)}</span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                            <p className="text-[10px] text-muted-foreground italic">
-                                * Se restaurará el stock de los productos seleccionados.
-                            </p>
+                        </div>
+
+                        {/* Refund Preview */}
+                        {selectedItems.length > 0 && (
+                            <div className="bg-orange-50 dark:bg-orange-950/20 p-4 rounded-2xl border border-orange-100 dark:border-orange-900/30 flex justify-between items-center animate-in fade-in slide-in-from-bottom-2">
+                                <div>
+                                    <p className="text-[10px] uppercase tracking-widest font-bold text-orange-600 dark:text-orange-400">Total a Reembolsar</p>
+                                    <p className="text-2xl font-black text-orange-700 dark:text-orange-300">
+                                        ${formatNumber(
+                                            selectedOrder?.items
+                                                ?.filter((item: any) => selectedItems.includes(item.id))
+                                                ?.reduce((sum: number, item: any) => sum + Number(item.subtotal), 0) || 0
+                                        )}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <Badge className="bg-orange-600 hover:bg-orange-600 text-white border-none rounded-full px-4">
+                                        {selectedItems.length} {selectedItems.length === 1 ? 'item' : 'items'}
+                                    </Badge>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex gap-2 text-[9px] text-muted-foreground italic bg-blue-50 dark:bg-blue-950/20 p-2 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                            <span className="font-bold text-blue-600 dark:text-blue-400">INFO:</span>
+                            Los productos seleccionados se restaurarán automáticamente al inventario.
                         </div>
                     </div>
 
-                    <DialogFooter className="flex flex-col sm:flex-row gap-2">
+                    <div className="p-6 bg-muted/30 flex flex-col sm:flex-row gap-3">
                         <Button 
-                            variant="destructive" 
-                            className="flex-1"
+                            variant="outline" 
+                            className="flex-1 h-12 rounded-2xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold transition-all border-2"
                             disabled={isCancelling || !returnReason}
                             onClick={async () => {
                                 if (!confirm('¿Seguro que deseas CANCELAR toda la orden? Esto restaurará el stock de TODO.')) return
@@ -596,7 +735,7 @@ export default function ReportsPage() {
                         </Button>
                         <Button 
                             variant="default" 
-                            className="flex-1"
+                            className="flex-1 h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20 font-bold transition-all"
                             disabled={isCancelling || selectedItems.length === 0 || !returnReason}
                             onClick={async () => {
                                 setIsCancelling(true)
@@ -612,9 +751,9 @@ export default function ReportsPage() {
                                 }
                             }}
                         >
-                            Devolución Parcial
+                            Confirmar Devolución
                         </Button>
-                    </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

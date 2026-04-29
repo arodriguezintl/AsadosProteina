@@ -10,6 +10,7 @@ import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 
 import { RefreshCw, CheckCircle, Clock, ShoppingBag } from 'lucide-react'
+import { formatNumber } from '@/utils/format'
 
 function DroppableColumn({ id, title, icon: Icon, color, children, count }: any) {
     const { isOver, setNodeRef } = useDroppable({ id });
@@ -71,7 +72,7 @@ function OrderCardDisplay({ order, actionButtons = null, isOverlay = false }: an
                 </ul>
                 <div className="mt-3 font-bold flex justify-between pt-3 border-t">
                     <span>Total</span>
-                    <span>${Number(order.total).toFixed(2)}</span>
+                    <span>${formatNumber(order.total)}</span>
                 </div>
             </CardContent>
             {actionButtons && (
@@ -275,7 +276,7 @@ export default function OrdersPage() {
                                                 <div className="flex justify-between items-end pt-2 border-t border-zinc-100 dark:border-zinc-800">
                                                     <div>
                                                         <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60">Total abonado</p>
-                                                        <p className="text-2xl font-black text-primary">${Number(order.total).toFixed(2)}</p>
+                                                        <p className="text-2xl font-black text-primary">${formatNumber(order.total)}</p>
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60">Servicio</p>

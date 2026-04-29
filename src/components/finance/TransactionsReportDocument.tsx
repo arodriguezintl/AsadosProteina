@@ -2,6 +2,7 @@ import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import type { Transaction } from '@/types/finance'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { formatNumber } from '@/utils/format'
 
 const styles = StyleSheet.create({
     page: {
@@ -135,8 +136,7 @@ const styles = StyleSheet.create({
     }
 })
 
-const fmt = (n: number) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(n)
+const fmt = (n: number) => `$${formatNumber(n)}`
 
 interface Props {
     transactions: Transaction[]

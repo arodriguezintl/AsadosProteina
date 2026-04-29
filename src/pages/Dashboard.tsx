@@ -9,6 +9,7 @@ import { DollarSign, ShoppingBag, Users, TrendingUp, ArrowDownRight, Clock, Chec
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { formatNumber } from '@/utils/format'
 
 export default function Dashboard() {
     const { storeId, loading: authLoading } = useAuthStore()
@@ -104,7 +105,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                             <p className="text-asados-muted text-sm font-medium">Ventas Hoy</p>
-                            <h3 className="text-2xl font-bold text-asados-dark mt-1">${stats.dailyRevenue.toFixed(2)}</h3>
+                            <h3 className="text-2xl font-bold text-asados-dark mt-1">${formatNumber(stats.dailyRevenue)}</h3>
                         </div>
                     </CardContent>
                 </Card>
@@ -146,7 +147,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                             <p className="text-asados-muted text-sm font-medium">Ticket Promedio</p>
-                            <h3 className="text-2xl font-bold text-asados-dark mt-1">${stats.avgTicket.toFixed(2)}</h3>
+                            <h3 className="text-2xl font-bold text-asados-dark mt-1">${formatNumber(stats.avgTicket)}</h3>
                         </div>
                     </CardContent>
                 </Card>
@@ -212,7 +213,7 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                                 <span className={`font-bold ${item.type === 'income' ? 'text-asados-dark' : 'text-red-500'}`}>
-                                    {item.type === 'income' ? '+' : '-'}${Math.abs(item.amount).toFixed(2)}
+                                    {item.type === 'income' ? '+' : '-'}${formatNumber(Math.abs(item.amount))}
                                 </span>
                             </div>
                         ))}

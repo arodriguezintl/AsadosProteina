@@ -174,16 +174,10 @@ export const ReportService = {
         return weeklyStats
     },
 
-    async getSalesByChannel(storeId: string, startDate: string, endDate: string) {
+    async getSalesByPaymentMethod(storeId: string, startDate: string, endDate: string) {
         const { data, error } = await supabase
             .from('orders')
-            .select(`
-                id,
-                channel,
-                total,
-                status,
-                customer:customers(full_name)
-            `)
+            .select('id, payment_method, total, status')
             .eq('store_id', storeId)
             .gte('created_at', startDate)
             .lte('created_at', endDate)
@@ -191,25 +185,29 @@ export const ReportService = {
 
         if (error) throw error
 
-        const channelStats: Record<string, { name: string, value: number, count: number }> = {}
+        const stats: Record<string, { name: string, value: number, count: number }> = {}
+
+        const methodMap: Record<string, string> = {
+            'cash': 'Efectivo',
+            'card': 'Tarjeta',
+            'transfer': 'Transferencia'
+        }
 
         data?.forEach((order: any) => {
-            let channel = order.channel || 'Mostrador'
-            
-            // Normalize channel names
-            const channelKey = channel.charAt(0).toUpperCase() + channel.slice(1).toLowerCase()
+            const method = order.payment_method || 'cash'
+            const methodName = methodMap[method] || method.charAt(0).toUpperCase() + method.slice(1)
 
-            if (!channelStats[channelKey]) {
-                channelStats[channelKey] = {
-                    name: channelKey,
+            if (!stats[methodName]) {
+                stats[methodName] = {
+                    name: methodName,
                     value: 0,
                     count: 0
                 }
             }
-            channelStats[channelKey].value += Number(order.total)
-            channelStats[channelKey].count += 1
+            stats[methodName].value += Number(order.total)
+            stats[methodName].count += 1
         })
 
-        return Object.values(channelStats).sort((a, b) => b.value - a.value)
+        return Object.values(stats).sort((a, b) => b.value - a.value)
     }
 }

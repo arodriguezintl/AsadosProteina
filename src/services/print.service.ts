@@ -1,4 +1,5 @@
 import type { TicketData } from '@/types/ticket'
+import { formatNumber } from '@/utils/format'
 
 function buildTicketHTML(data: TicketData): string {
   return `<!DOCTYPE html>
@@ -71,22 +72,22 @@ function buildTicketHTML(data: TicketData): string {
       <div class="item">
         <span>${String(item.qty).padStart(2)}</span>
         <span class="desc">${item.description}</span>
-        <span>$${item.lineTotal.toFixed(2)}</span>
+        <span>$${formatNumber(item.lineTotal)}</span>
       </div>
     `).join('')}
   </div>
 
   <div class="line"></div>
   <div class="totals">
-    <div class="row"><span>SUBTOTAL:</span><span>$${data.subtotal.toFixed(2)}</span></div>
+    <div class="row"><span>SUBTOTAL:</span><span>$${formatNumber(data.subtotal)}</span></div>
     ${data.delivery_fee && data.delivery_fee > 0
-      ? `<div class="row"><span>ENVÍO:</span><span>$${data.delivery_fee.toFixed(2)}</span></div>`
+      ? `<div class="row"><span>ENVÍO:</span><span>$${formatNumber(data.delivery_fee)}</span></div>`
       : ''}
     ${data.tax > 0
-      ? `<div class="row"><span>IVA (16%):</span><span>$${data.tax.toFixed(2)}</span></div>`
+      ? `<div class="row"><span>IVA (16%):</span><span>$${formatNumber(data.tax)}</span></div>`
       : `<div class="row"><span>IVA:</span><span>$0.00</span></div>`}
   </div>
-  <div class="grand-total">TOTAL: $${data.total.toFixed(2)} ${data.currency}</div>
+  <div class="grand-total">TOTAL: $${formatNumber(data.total)} ${data.currency}</div>
 
   ${data.customer ? `
   <div class="line"></div>

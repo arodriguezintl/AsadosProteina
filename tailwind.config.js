@@ -14,6 +14,11 @@ export default {
         'sellix-bg': '#F8FAFC',        // Slate 50 (General background)
         'sellix-surface': '#FFFFFF',   // White (Cards)
         'sellix-muted': '#64748B',     // Slate 500 (Muted texts)
+        'asados-dark': '#0F172A',      // Premium Slate
+        'asados-muted': '#64748B',     // Slate 500
+        'asados-surface': '#FFFFFF',   // White
+        'asados-bg': '#F8FAFC',        // Background
+        'asados-lime': '#10B981',      // Emerald/Lime Success
       },
       fontFamily: {
         sans: ['Manrope', 'Outfit', 'sans-serif'],

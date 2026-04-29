@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { formatNumber } from '@/utils/format'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -573,7 +574,7 @@ export default function HRPage() {
                                             {stores.find(s => s.id === emp.store_id)?.name || 'N/A'}
                                         </TableCell>
                                         <TableCell>
-                                            ${emp.salary_amount?.toFixed(2)} / {
+                                            ${formatNumber(emp.salary_amount)} / {
                                                 emp.salary_type === 'hourly' ? 'Hr' :
                                                     emp.salary_type === 'weekly' ? 'Sem' :
                                                         emp.salary_type === 'monthly' ? 'Mes' : 'Entrega'
@@ -685,7 +686,7 @@ export default function HRPage() {
                                     Periodo: `${format(new Date(p.period_start), 'dd MMM', { locale: es })} - ${format(new Date(p.period_end), 'dd MMM yyyy', { locale: es })}`,
                                     Empleado: p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : 'N/A',
                                     Horas: p.total_hours?.toFixed(2) || '0.00',
-                                    "Total Pagado": p.total_paid?.toFixed(2) || '0.00',
+                                    "Total Pagado": formatNumber(p.total_paid),
                                     Estado: p.status === 'paid' ? 'Pagado' : 'Borrador'
                                 })),
                                 'Reporte_De_Nomina'
@@ -705,7 +706,7 @@ export default function HRPage() {
                                     `${format(new Date(p.period_start), 'dd MMM', { locale: es })} - ${format(new Date(p.period_end), 'dd MMM yyyy', { locale: es })}`,
                                     p.employee ? `${p.employee.first_name} ${p.employee.last_name}` : 'N/A',
                                     p.total_hours?.toFixed(2) || '0.00',
-                                    p.total_paid?.toFixed(2) || '0.00',
+                                    formatNumber(p.total_paid),
                                     p.status === 'paid' ? 'Pagado' : 'Borrador'
                                 ]),
                                 'Reporte_De_Nomina'
@@ -813,7 +814,7 @@ export default function HRPage() {
                                             {payroll.employee ? `${payroll.employee.first_name} ${payroll.employee.last_name}` : 'N/A'}
                                         </TableCell>
                                         <TableCell>{payroll.total_hours?.toFixed(2) || '0.00'} hrs</TableCell>
-                                        <TableCell className="font-semibold">${payroll.total_paid?.toFixed(2)}</TableCell>
+                                        <TableCell className="font-semibold">${formatNumber(payroll.total_paid)}</TableCell>
                                         <TableCell>
                                             <Badge variant={payroll.status === 'paid' ? 'default' : 'secondary'}>
                                                 {payroll.status === 'paid' ? 'Pagado' : 'Borrador'}

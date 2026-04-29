@@ -29,6 +29,7 @@ interface AuthState {
     signOut: () => Promise<void>
     reset: () => void
     checkSession: () => Promise<void>
+    setStoreId: (id: string) => void
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -38,6 +39,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     modules: [],
     brandingConfig: null,
     loading: true,
+
+    setStoreId: (id: string) => set({ storeId: id }),
 
     signIn: async (email: string, password?: string) => {
         console.log('Attempting sign in for:', email)

@@ -5,6 +5,7 @@ import { Outlet, Link, useLocation } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import logoImage from "@/assets/logo.jpg"
 import { useLowStockAlert } from "@/hooks/useLowStockAlert"
@@ -39,10 +40,12 @@ const NavItem = ({ to, icon: Icon, label, exact = false, prefix = false, isExpan
 }
 
 export function AppLayout() {
-    const { user, role, modules, signOut, storeId, brandingConfig } = useAuthStore()
+    const { user, role, modules, signOut, storeId, setStoreId, brandingConfig } = useAuthStore()
     const [storeName, setStoreName] = useState<string>('')
+    const [stores, setStores] = useState<any[]>([])
     const [isPinned, setIsPinned] = useState(true)
     const [isHovered, setIsHovered] = useState(false)
+    const [loadingStores, setLoadingStores] = useState(false)
 
     // Alerta de stock bajo
     const stockAlert = useLowStockAlert()
@@ -56,8 +59,28 @@ export function AppLayout() {
                 .then(({ data }) => {
                     if (data) setStoreName(data.name)
                 })
+        } else {
+            setStoreName('')
         }
     }, [storeId])
+
+    useEffect(() => {
+        if (role === 'super_admin' || role === 'admin') {
+            setLoadingStores(true)
+            supabase.from('stores').select('id, name')
+                .then(({ data }) => {
+                    if (data) {
+                        setStores(data)
+                        // Auto-assign if missing and there are stores available
+                        if (!storeId && data.length > 0) {
+                            console.log('Auto-assigning first store:', data[0].name)
+                            setStoreId(data[0].id)
+                        }
+                    }
+                    setLoadingStores(false)
+                })
+        }
+    }, [role, storeId])
 
     const handleSignOut = async () => {
         await signOut()
@@ -112,9 +135,31 @@ export function AppLayout() {
                         {isExpanded && <span className="text-[10px] bg-primary text-white px-1 rounded shadow-sm mt-1">BETA</span>}
                     </div>
 
-                    <div className={cn("mt-2 text-center transition-all duration-300 whitespace-nowrap overflow-hidden", !isExpanded ? "h-0 opacity-0" : "h-auto opacity-100")}>
+                    <div className={cn("mt-2 text-center transition-all duration-300 whitespace-nowrap overflow-hidden w-full", !isExpanded ? "h-0 opacity-0" : "h-auto opacity-100")}>
                         <p className="text-xs text-white/60 font-medium">ERP Management</p>
-                        {storeName && <p className="text-xs text-primary font-bold uppercase tracking-wider truncate px-2">{storeName}</p>}
+                        
+                        {(role === 'super_admin' || role === 'admin') && stores.length > 0 ? (
+                            <div className="px-3 mt-1">
+                                <Select value={storeId || ''} onValueChange={(val) => setStoreId(val)}>
+                                    <SelectTrigger className="h-8 text-[10px] bg-white/5 border-white/10 text-primary font-bold uppercase hover:bg-white/10 focus:ring-0 focus:ring-offset-0">
+                                        <SelectValue placeholder="Tienda..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {stores.map(s => (
+                                            <SelectItem key={s.id} value={s.id} className="text-[10px] uppercase font-bold">
+                                                {s.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ) : (
+                            storeName && <p className="text-xs text-primary font-bold uppercase tracking-wider truncate px-2">{storeName}</p>
+                        )}
+                        
+                        {!storeId && role === 'super_admin' && !loadingStores && stores.length === 0 && (
+                            <p className="text-[10px] text-red-400 font-bold px-2 mt-1">Requiere configurar tienda</p>
+                        )}
                     </div>
                 </div>
 
@@ -157,9 +202,9 @@ export function AppLayout() {
                     {(canViewFinance || canViewTransactions || canViewFinanceCategories || canViewReports || canViewCRM || canViewHR || canViewUsers || canViewStores || canViewPromotions) && (
                         <>
                             <div className={cn("text-xs font-bold text-white/50 uppercase tracking-wider mb-2 px-3 mt-6 transition-opacity duration-300 whitespace-nowrap", !isExpanded && "opacity-0")}>Administración</div>
-                            {canViewFinance && <NavItem to="/finance" icon={PieChart} label="Finanzas" exact isExpanded={isExpanded} />}
+                            {canViewFinance && <NavItem to="/finance" icon={PieChart} label="Cajas y Finanzas" exact isExpanded={isExpanded} />}
                             {canViewTransactions && <NavItem to="/finance/transactions" icon={ArrowLeftRight} label="Transacciones" isExpanded={isExpanded} />}
-                            {canViewFinanceCategories && <NavItem to="/finance/categories" icon={Wallet} label="Categorías Fin." isExpanded={isExpanded} />}
+                            {canViewFinanceCategories && <NavItem to="/finance/categories" icon={Wallet} label="Config. Finanzas" isExpanded={isExpanded} />}
 
                             {canViewReports && <NavItem to="/reports" icon={BarChart3} label="Reportes" prefix isExpanded={isExpanded} />}
                             {canViewCRM && <NavItem to="/crm/customers" icon={Users} label="Clientes" prefix isExpanded={isExpanded} />}

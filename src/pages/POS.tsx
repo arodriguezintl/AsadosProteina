@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -26,6 +27,7 @@ import { PrintService } from '@/services/print.service'
 import { HRService } from '@/services/hr.service'
 import { supabase } from '@/lib/supabase'
 import { getMexicoDayString, getMexicoStartOfDayISO } from '@/utils/date'
+import { formatNumber } from '@/utils/format'
 
 // Assets
 import mobileBankingImg from '@/assets/mobile-banking.png'
@@ -51,7 +53,9 @@ export default function POS() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all')
     const customerSearchRef = useRef<HTMLDivElement>(null)
     const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all')
+    const [selectedVariant, setSelectedVariant] = useState<string>('all')
     const [posCategories, setPosCategories] = useState<string[]>([])
+    const [allCategories, setAllCategories] = useState<string[]>([])
     const [showPromoDialog, setShowPromoDialog] = useState(false)
     const [promoExtraItem, setPromoExtraItem] = useState<string>('')
     // Expense dialog state
@@ -175,14 +179,27 @@ export default function POS() {
 
             setProducts(validProducts)
             
+            // Extract unique categories for POS tabs
+            const rawCats = Array.from(new Set(validProducts.map(p => p.category?.name).filter(Boolean))) as string[]
+            setAllCategories(rawCats)
+            
+            // Generic grouping logic for prefixes like "Asados", "Sandwich"
+            const groupablePrefixes = ['Asados', 'Sandwich']
+            const foundGroups = new Set<string>()
+            
+            rawCats.forEach(c => {
+                const prefix = groupablePrefixes.find(p => c.startsWith(p + ' '))
+                if (prefix) foundGroups.add(prefix)
+            })
+
+            let topCats = rawCats.filter(c => !groupablePrefixes.some(p => c.startsWith(p + ' ')))
+            // Add the group names at the beginning
+            setPosCategories([...Array.from(foundGroups), ...topCats])
+            
             // Auto-select transfer for external clients to simplify
             if (role === 'external_client') {
                 setSelectedPaymentMethod('transfer')
             }
-            
-            // Extract unique categories for POS tabs
-            const cats = Array.from(new Set(validProducts.map(p => p.category?.name).filter(Boolean))) as string[]
-            setPosCategories(cats)
             
         } catch (error) {
             console.error('Error loading products:', error)
@@ -228,15 +245,31 @@ export default function POS() {
     const filteredProducts = products.filter(p => {
         const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                               (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesCategory = selectedCategory === 'all' || p.category?.name === selectedCategory
+        const matchesCategory = selectedCategory === 'all' || 
+                                p.category?.name === selectedCategory || 
+                                (p.category?.name || '').startsWith(selectedCategory + ' ')
         
-        // Sub-category logic for Menu items
+        // Sub-category logic
         let matchesSubCategory = true
-        if (selectedCategory === 'Menú' && selectedSubCategory !== 'all') {
+        const isGrouped = ['Asados', 'Sandwich'].includes(selectedCategory)
+        
+        if (isGrouped && selectedSubCategory !== 'all') {
+            matchesSubCategory = p.category?.name === selectedSubCategory
+        } else if (selectedCategory === 'Menú' && selectedSubCategory !== 'all') {
             const n = (p.name || '').toLowerCase()
             if (selectedSubCategory === 'con arroz') matchesSubCategory = n.includes('arroz')
             else if (selectedSubCategory === 'con espagueti') matchesSubCategory = n.includes('espagueti') || n.includes('spaghetti')
             else if (selectedSubCategory === 'otros') matchesSubCategory = !n.includes('arroz') && !n.includes('espagueti') && !n.includes('spaghetti')
+        }
+
+        // Third level logic (Variants)
+        let matchesVariant = true
+        if (isGrouped && selectedSubCategory !== 'all' && selectedVariant !== 'all') {
+            const n = (p.name || '').toLowerCase()
+            if (selectedVariant === 'arroz') matchesVariant = n.includes('arroz')
+            else if (selectedVariant === 'espagueti') matchesVariant = n.includes('espagueti') || n.includes('spaghetti')
+            else if (selectedVariant === 'salchicha') matchesVariant = n.includes('salchicha')
+            else if (selectedVariant === 'otros') matchesVariant = !n.includes('arroz') && !n.includes('espagueti') && !n.includes('spaghetti') && !n.includes('salchicha')
         }
 
         // MVP Weekend Filter for External Clients
@@ -251,7 +284,7 @@ export default function POS() {
             if (name.includes('[interno]')) return false
         }
 
-        return matchesSearch && matchesCategory && matchesSubCategory
+        return matchesSearch && matchesCategory && matchesSubCategory && matchesVariant
     })
 
     const addToCart = (product: Product) => {
@@ -518,7 +551,7 @@ export default function POS() {
                         <Button
                             variant={selectedCategory === 'all' ? 'default' : 'secondary'}
                             size="sm"
-                            onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all') }}
+                            onClick={() => { setSelectedCategory('all'); setSelectedSubCategory('all'); setSelectedVariant('all') }}
                             className="whitespace-nowrap rounded-full"
                         >
                             Todos
@@ -528,13 +561,74 @@ export default function POS() {
                                 key={cat}
                                 variant={selectedCategory === cat ? 'default' : 'secondary'}
                                 size="sm"
-                                onClick={() => { setSelectedCategory(cat); setSelectedSubCategory('all') }}
+                                onClick={() => { setSelectedCategory(cat); setSelectedSubCategory('all'); setSelectedVariant('all') }}
                                 className="whitespace-nowrap rounded-full"
                             >
                                 {cat}
                             </Button>
                         ))}
                     </div>
+
+                    {selectedCategory !== 'all' && allCategories.some(c => c.startsWith(selectedCategory + ' ')) && (
+                        <div className="space-y-3 mb-4">
+                            {/* Second Level: Specific Category */}
+                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide animate-in slide-in-from-top-1 duration-200">
+                                <Button
+                                    variant={selectedSubCategory === 'all' ? 'default' : 'secondary'}
+                                    size="sm"
+                                    onClick={() => { setSelectedSubCategory('all'); setSelectedVariant('all') }}
+                                    className={cn(
+                                        "whitespace-nowrap rounded-full transition-all h-8 text-xs",
+                                        selectedSubCategory === 'all' ? "bg-orange-600 shadow-md scale-105" : "bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200"
+                                    )}
+                                >
+                                    Todos
+                                </Button>
+                                {allCategories.filter(c => c.startsWith(selectedCategory + ' ')).map(subCat => (
+                                    <Button
+                                        key={subCat}
+                                        variant={selectedSubCategory === subCat ? 'default' : 'secondary'}
+                                        size="sm"
+                                        onClick={() => { setSelectedSubCategory(subCat); setSelectedVariant('all') }}
+                                        className={cn(
+                                            "whitespace-nowrap rounded-full transition-all h-8 text-xs",
+                                            selectedSubCategory === subCat ? "bg-orange-600 shadow-md scale-105" : "bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200"
+                                        )}
+                                    >
+                                        {subCat.replace(selectedCategory + ' de ', '').replace(selectedCategory + ' ', '')}
+                                    </Button>
+                                ))}
+                            </div>
+
+                            {/* Third Level: Variants */}
+                            {selectedSubCategory !== 'all' && (
+                                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide animate-in slide-in-from-left-2 duration-300">
+                                    {[
+                                        { id: 'all', label: 'Todo' },
+                                        { id: 'arroz', label: 'Con Arroz' },
+                                        { id: 'espagueti', label: 'Con Espagueti' },
+                                        { id: 'salchicha', label: 'Con Salchicha' },
+                                        { id: 'otros', label: 'Otros' }
+                                    ].map(variant => (
+                                        <Button
+                                            key={variant.id}
+                                            variant={selectedVariant === variant.id ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => setSelectedVariant(variant.id)}
+                                            className={cn(
+                                                "whitespace-nowrap rounded-full h-7 text-[10px] uppercase tracking-wider font-bold transition-all",
+                                                selectedVariant === variant.id 
+                                                    ? "bg-zinc-800 text-white border-zinc-800 shadow-sm" 
+                                                    : "bg-white text-zinc-500 hover:text-zinc-800 border-zinc-200"
+                                            )}
+                                        >
+                                            {variant.label}
+                                        </Button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {selectedCategory === 'Menú' && (
                         <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
@@ -604,7 +698,7 @@ export default function POS() {
                                         </CardHeader>
                                         <CardContent className="p-3 pt-1">
                                             <div className="flex items-center justify-between">
-                                                <div className="text-base font-bold text-primary">${product.sale_price?.toFixed(2)}</div>
+                                                <div className="text-base font-bold text-primary">${formatNumber(product.sale_price)}</div>
                                                 {role !== 'external_client' && (
                                                     <div className={`text-xs ${product.current_stock <= product.min_stock ? 'text-red-500 font-bold' : 'text-muted-foreground'}`}>
                                                         Stock: {product.current_stock}
@@ -809,7 +903,7 @@ export default function POS() {
                     <CardFooter className="flex-col gap-4 p-6 pt-4">
                         <div className="flex w-full items-center justify-between text-lg font-bold">
                             <span>Total</span>
-                            <span>${cartTotal.toFixed(2)}</span>
+                            <span>${formatNumber(cartTotal)}</span>
                         </div>
                         {isCityEx ? (
                             <Button
@@ -1009,7 +1103,7 @@ export default function POS() {
                             {selectedPaymentMethod === 'transfer' && "🏦 Pago por Transferencia"}
                         </DialogTitle>
                         <DialogDescription>
-                            Detalles del pago para la orden de ${cartTotal.toFixed(2)}
+                            Detalles del pago para la orden de ${formatNumber(cartTotal)}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1018,7 +1112,7 @@ export default function POS() {
                             <div className="space-y-4">
                                 <div className="p-4 bg-green-50 rounded-lg border border-green-100 flex justify-between items-center">
                                     <span className="text-sm font-medium text-green-800">Total a Cobrar:</span>
-                                    <span className="text-2xl font-bold text-green-900">${cartTotal.toFixed(2)}</span>
+                                    <span className="text-2xl font-bold text-green-900">${formatNumber(cartTotal)}</span>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="monto-recibido">Monto Recibido</Label>
@@ -1039,7 +1133,7 @@ export default function POS() {
                                     <div className="p-4 bg-orange-50 rounded-lg border border-orange-100 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
                                         <span className="text-sm font-medium text-orange-800">Cambio a Devolver:</span>
                                         <span className={`text-3xl font-black ${montoRecibido >= cartTotal ? 'text-orange-600' : 'text-red-500'}`}>
-                                            ${(montoRecibido >= cartTotal ? (montoRecibido - cartTotal) : 0).toFixed(2)}
+                                            ${formatNumber(montoRecibido >= cartTotal ? (montoRecibido - cartTotal) : 0)}
                                         </span>
                                     </div>
                                 )}

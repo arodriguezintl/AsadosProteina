@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from '@/components/ui/label'
+import { formatNumber } from '@/utils/format'
 
 type ProductsPageProps = {
     viewMode?: 'inventory' | 'menu' // inventory = raw materials/others, menu = finished products
@@ -233,7 +234,7 @@ export default function ProductsPage({ viewMode }: ProductsPageProps) {
                                     <TableCell className="font-medium">{product.name || 'Sin Nombre'}</TableCell>
                                     <TableCell>{product.category?.name || '-'}</TableCell>
                                     <TableCell>{product.sku || '-'}</TableCell>
-                                    <TableCell>${product.sale_price?.toFixed(2) || '-'}</TableCell>
+                                    <TableCell>${formatNumber(product.sale_price)}</TableCell>
                                     <TableCell>
                                         <span className={product.current_stock <= product.min_stock ? "text-red-500 font-bold" : ""}>
                                             {product.current_stock} {product.unit_of_measure || 'unid'}
