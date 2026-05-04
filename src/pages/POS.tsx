@@ -514,22 +514,17 @@ export default function POS() {
                             <h1 className="text-2xl font-bold whitespace-nowrap">
                                 {role === 'external_client' ? `Portal de Pedidos - ${brandingConfig?.client_name}` : 'Punto de Venta'}
                             </h1>
-                            <p className="text-muted-foreground">
-                                {role === 'external_client' ? 'Selecciona tus productos' : 'Selecciona productos para agregar a la orden'}
-                            </p>
                         </div>
                         <div className="flex flex-1 flex-wrap items-center justify-start md:justify-end gap-3 md:gap-4 min-w-[300px]">
                             {role !== 'external_client' && (
                                 <>
                                     <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 bg-white" onClick={() => setShowExpenseDialog(true)}>
                                         <TrendingDown className="h-4 w-4 mr-2" />
-                                        <span className="hidden sm:inline">Registrar Gasto</span>
-                                        <span className="sm:hidden">Gasto</span>
+                                        <span>Gasto</span>
                                     </Button>
                                     <Button variant="outline" className="text-orange-600 border-orange-600 hover:bg-orange-50 bg-white" onClick={handleCorteDeCaja}>
                                         <Calculator className="h-4 w-4 mr-2" />
-                                        <span className="hidden sm:inline">Corte de Caja</span>
-                                        <span className="sm:hidden">Corte</span>
+                                        <span>Corte</span>
                                     </Button>
                                 </>
                             )}
@@ -546,6 +541,8 @@ export default function POS() {
                             </div>
                         </div>
                     </div>
+                    
+                    <div className="h-4" /> {/* Spacer for breathing room */}
 
                     <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
                         <Button

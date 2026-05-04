@@ -5,7 +5,7 @@ import type { Customer } from '@/types/customers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Loader2, Plus, Search, User, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Search, User, Trash2, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react'
 
 import { useAuthStore } from '@/store/auth.store'
 
@@ -13,6 +13,8 @@ export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
+    const [sortField, setSortField] = useState<'full_name' | 'total_orders'>('full_name')
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
     const { storeId } = useAuthStore()
 
     useEffect(() => {
@@ -44,11 +46,29 @@ export default function CustomersPage() {
         }
     }
 
-    const filteredCustomers = customers.filter(c =>
-        c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.phone?.includes(searchTerm)
-    )
+    const handleSort = (field: 'full_name' | 'total_orders') => {
+        if (sortField === field) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+        } else {
+            setSortField(field)
+            setSortDirection('asc')
+        }
+    }
+
+    const filteredCustomers = customers
+        .filter(c =>
+            c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.phone?.includes(searchTerm)
+        )
+        .sort((a, b) => {
+            const factor = sortDirection === 'asc' ? 1 : -1
+            if (sortField === 'full_name') {
+                return a.full_name.localeCompare(b.full_name) * factor
+            } else {
+                return ((a.total_orders || 0) - (b.total_orders || 0)) * factor
+            }
+        })
 
     return (
         <div className="space-y-6">
@@ -80,9 +100,33 @@ export default function CustomersPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Nombre</TableHead>
+                            <TableHead 
+                                className="cursor-pointer hover:bg-muted/50 transition-colors group"
+                                onClick={() => handleSort('full_name')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Nombre
+                                    {sortField === 'full_name' ? (
+                                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-50" />
+                                    )}
+                                </div>
+                            </TableHead>
                             <TableHead>Contacto</TableHead>
-                            <TableHead>Ventas Realizadas</TableHead>
+                            <TableHead 
+                                className="cursor-pointer hover:bg-muted/50 transition-colors group"
+                                onClick={() => handleSort('total_orders')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Ventas Realizadas
+                                    {sortField === 'total_orders' ? (
+                                        sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-3 w-3 opacity-0 group-hover:opacity-50" />
+                                    )}
+                                </div>
+                            </TableHead>
                             <TableHead className="text-right">Acciones</TableHead>
                         </TableRow>
                     </TableHeader>

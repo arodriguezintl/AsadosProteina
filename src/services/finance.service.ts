@@ -73,27 +73,44 @@ export const FinanceService = {
         return data as Transaction
     },
 
-    async getFinancialStats(storeId: string) {
-        const { data: transactions, error: transError } = await supabase
+    async getFinancialStats(storeId: string, startDate?: string, endDate?: string) {
+        let transQuery = supabase
             .from('transactions')
             .select('*')
             .eq('store_id', storeId)
 
-        if (transError) throw transError
-
-        const { data: orders, error: ordersError } = await supabase
+        let ordersQuery = supabase
             .from('orders')
             .select('total')
             .eq('store_id', storeId)
             .eq('status', 'completed')
 
-        if (ordersError) throw ordersError
-
-        const { data: payrolls, error: payrollError } = await supabase
+        let payrollQuery = supabase
             .from('payrolls')
             .select('total_paid')
             .eq('store_id', storeId)
 
+        if (startDate) {
+            transQuery = transQuery.gte('transaction_date', startDate)
+            ordersQuery = ordersQuery.gte('created_at', startDate)
+            payrollQuery = payrollQuery.gte('payment_date', startDate)
+        }
+
+        if (endDate) {
+            // Include end of day for timestamps
+            const endOfDay = `${endDate}T23:59:59.999Z`
+            transQuery = transQuery.lte('transaction_date', endDate)
+            ordersQuery = ordersQuery.lte('created_at', endOfDay)
+            payrollQuery = payrollQuery.lte('payment_date', endDate)
+        }
+
+        const { data: transactions, error: transError } = await transQuery
+        if (transError) throw transError
+
+        const { data: orders, error: ordersError } = await ordersQuery
+        if (ordersError) throw ordersError
+
+        const { data: payrolls, error: payrollError } = await payrollQuery
         if (payrollError) throw payrollError
 
         const transactionIncome = transactions
@@ -229,12 +246,97 @@ export const FinanceService = {
         }))
     },
 
-    async getExpensesByCategory(storeId: string) {
+    async getTrends(storeId: string, days: number = 30) {
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - days)
+        const startDateISO = startDate.toISOString()
+
+        // Get transactions
         const { data: transactions } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('store_id', storeId)
+            .gte('transaction_date', startDateISO)
+
+        // Get orders
+        const { data: orders } = await supabase
+            .from('orders')
+            .select('total, created_at')
+            .eq('store_id', storeId)
+            .eq('status', 'completed')
+            .gte('created_at', startDateISO)
+
+        // Get payrolls
+        const { data: payrolls } = await supabase
+            .from('payrolls')
+            .select('total_paid, payment_date')
+            .eq('store_id', storeId)
+            .gte('payment_date', startDateISO.split('T')[0])
+
+        const trendsMap: Record<string, { income: number, expenses: number }> = {}
+
+        // Helper to format date based on period
+        const formatKey = (dateStr: string) => {
+            const date = new Date(dateStr)
+            if (days <= 31) {
+                return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+            } else {
+                return date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' })
+            }
+        }
+
+        orders?.forEach(order => {
+            const key = formatKey(order.created_at)
+            if (!trendsMap[key]) trendsMap[key] = { income: 0, expenses: 0 }
+            trendsMap[key].income += Number(order.total)
+        })
+
+        transactions?.forEach(trans => {
+            const key = formatKey(trans.transaction_date)
+            if (!trendsMap[key]) trendsMap[key] = { income: 0, expenses: 0 }
+            if (trans.type === 'income') {
+                trendsMap[key].income += Number(trans.amount)
+            } else {
+                trendsMap[key].expenses += Number(trans.amount)
+            }
+        })
+
+        payrolls?.forEach(payroll => {
+            const key = formatKey(payroll.payment_date)
+            if (!trendsMap[key]) trendsMap[key] = { income: 0, expenses: 0 }
+            trendsMap[key].expenses += Number(payroll.total_paid)
+        })
+
+        return Object.entries(trendsMap).map(([label, data]) => ({
+            label,
+            income: data.income,
+            expenses: data.expenses
+        }))
+    },
+
+    async getExpensesByCategory(storeId: string, startDate?: string, endDate?: string) {
+        let transQuery = supabase
             .from('transactions')
             .select('amount, category:finance_categories(name)')
             .eq('store_id', storeId)
             .eq('type', 'expense')
+
+        let payrollQuery = supabase
+            .from('payrolls')
+            .select('total_paid')
+            .eq('store_id', storeId)
+
+        if (startDate) {
+            transQuery = transQuery.gte('transaction_date', startDate)
+            payrollQuery = payrollQuery.gte('payment_date', startDate)
+        }
+        if (endDate) {
+            transQuery = transQuery.lte('transaction_date', endDate)
+            payrollQuery = payrollQuery.lte('payment_date', endDate)
+        }
+
+        const { data: transactions } = await transQuery
+        const { data: payrolls } = await payrollQuery
 
         const categoryMap: Record<string, number> = {}
 
@@ -243,12 +345,6 @@ export const FinanceService = {
             if (!categoryMap[categoryName]) categoryMap[categoryName] = 0
             categoryMap[categoryName] += Number(trans.amount)
         })
-
-        // Add payroll as a category
-        const { data: payrolls } = await supabase
-            .from('payrolls')
-            .select('total_paid')
-            .eq('store_id', storeId)
 
         const payrollTotal = payrolls?.reduce((sum, p) => sum + Number(p.total_paid), 0) || 0
         if (payrollTotal > 0) {

@@ -134,44 +134,71 @@ export const ReportService = {
     },
 
     async getWeeklySales(storeId: string) {
-        const today = new Date()
-        const startOfWeek = new Date(today)
-        startOfWeek.setDate(today.getDate() - 6) // Last 7 days
-        startOfWeek.setHours(0, 0, 0, 0)
+        return this.getSalesTrends(storeId, 7)
+    },
 
-        const endOfWeek = new Date(today)
-        endOfWeek.setHours(23, 59, 59, 999)
+    async getSalesTrends(storeId: string, days: number = 7) {
+        const today = new Date()
+        let startDate: Date
+        let isHourly = false
+
+        if (days === 0) {
+            // Today (hourly)
+            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0)
+            isHourly = true
+        } else {
+            // Last N days (daily)
+            startDate = new Date(today)
+            startDate.setDate(today.getDate() - (days - 1))
+            startDate.setHours(0, 0, 0, 0)
+        }
 
         const { data: orders, error } = await supabase
             .from('orders')
             .select('created_at, total')
             .eq('store_id', storeId)
-            .gte('created_at', startOfWeek.toISOString())
-            .lte('created_at', endOfWeek.toISOString())
+            .gte('created_at', startDate.toISOString())
             .neq('status', 'cancelled')
 
         if (error) throw error
 
-        const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-        const weeklyStats = new Array(7).fill(0).map((_, i) => {
-            const d = new Date(startOfWeek)
-            d.setDate(d.getDate() + i)
-            return {
-                name: days[d.getDay()],
-                date: d.toISOString().split('T')[0],
+        if (isHourly) {
+            // Group by hour
+            const hourlyStats = new Array(24).fill(0).map((_, i) => ({
+                name: `${i}:00`,
                 total: 0
-            }
-        })
+            }))
 
-        orders?.forEach((order: any) => {
-            const orderDate = order.created_at.split('T')[0]
-            const dayStat = weeklyStats.find(d => d.date === orderDate)
-            if (dayStat) {
-                dayStat.total += Number(order.total)
-            }
-        })
+            orders?.forEach((order: any) => {
+                const hour = new Date(order.created_at).getHours()
+                hourlyStats[hour].total += Number(order.total)
+            })
 
-        return weeklyStats
+            return hourlyStats
+        } else {
+            // Group by day
+            const dailyMap: Record<string, number> = {}
+            const result: any[] = []
+
+            for (let i = 0; i < days; i++) {
+                const d = new Date(startDate)
+                d.setDate(d.getDate() + i)
+                const dateKey = d.toISOString().split('T')[0]
+                const label = d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+                dailyMap[dateKey] = 0
+                result.push({ name: label, dateKey, total: 0 })
+            }
+
+            orders?.forEach((order: any) => {
+                const orderDate = order.created_at.split('T')[0]
+                if (dailyMap.hasOwnProperty(orderDate)) {
+                    const found = result.find(r => r.dateKey === orderDate)
+                    if (found) found.total += Number(order.total)
+                }
+            })
+
+            return result
+        }
     },
 
     async getSalesByPaymentMethod(storeId: string, startDate: string, endDate: string) {

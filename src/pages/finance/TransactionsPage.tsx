@@ -19,6 +19,18 @@ import { PDFDownloadLink } from '@react-pdf/renderer'
 import { TransactionsReportDocument } from '@/components/finance/TransactionsReportDocument'
 import { cn } from '@/lib/utils'
 import { formatNumber } from '@/utils/format'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function TransactionsPage() {
     const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -29,6 +41,10 @@ export default function TransactionsPage() {
     const [itemsPerPage] = useState(25)
     const [searchTerm, setSearchTerm] = useState('')
     const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all')
+    const [startDate, setStartDate] = useState(format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'))
+    const [endDate, setEndDate] = useState(getMexicoDayString())
+    const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'card' | 'transfer'>('all')
+    const [categoryFilter, setCategoryFilter] = useState<string>('all')
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [formData, setFormData] = useState({
         type: 'expense' as 'income' | 'expense',
@@ -45,21 +61,25 @@ export default function TransactionsPage() {
         if (storeId) {
             loadData()
         }
-    }, [storeId, typeFilter])
+    }, [storeId, typeFilter, startDate, endDate])
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [searchTerm, typeFilter])
+    }, [searchTerm, typeFilter, startDate, endDate, paymentFilter, categoryFilter])
 
     const loadData = async () => {
         try {
             if (!storeId) return
 
-            const filters = typeFilter !== 'all' ? { type: typeFilter } : {}
+            const filters = { 
+                ...(typeFilter !== 'all' ? { type: typeFilter } : {}),
+                startDate,
+                endDate
+            }
             const [transData, catData, financialStats] = await Promise.all([
                 FinanceService.getTransactions(storeId, filters),
                 FinanceService.getCategories(),
-                FinanceService.getFinancialStats(storeId)
+                FinanceService.getFinancialStats(storeId, startDate, endDate)
             ])
 
             // If we are showing all or income, let's also fetch recent sales to show them as "transactions"
@@ -71,8 +91,10 @@ export default function TransactionsPage() {
                     .select('*')
                     .eq('store_id', storeId)
                     .eq('status', 'completed')
+                    .gte('created_at', startDate)
+                    .lte('created_at', `${endDate}T23:59:59.999Z`)
                     .order('created_at', { ascending: false })
-                    .limit(50)
+                    .limit(500)
 
                 if (salesData) {
                     const salesAsTransactions = salesData.map((order: any) => ({
@@ -139,10 +161,14 @@ export default function TransactionsPage() {
         }
     }
 
-    const filteredTransactions = transactions.filter(t =>
-        t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.category?.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const filteredTransactions = transactions.filter(t => {
+        const matchesSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              t.category?.name.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesPayment = paymentFilter === 'all' || t.payment_method === paymentFilter
+        const matchesCategory = categoryFilter === 'all' || t.category_id === categoryFilter || (categoryFilter === 'sales' && t.category_id === 'sales')
+        
+        return matchesSearch && matchesPayment && matchesCategory
+    })
 
     const totalIncome = stats.income
     const totalExpenses = stats.expenses
@@ -346,8 +372,8 @@ export default function TransactionsPage() {
 
             {/* Filters Bar */}
             <Card className="border-none rounded-2xl shadow-soft bg-white dark:bg-slate-900">
-                <CardContent className="p-4 flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
+                <CardContent className="p-4 flex flex-col md:flex-row gap-4 flex-wrap">
+                    <div className="relative flex-1 min-w-[200px]">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Buscar descripción o categoría..."
@@ -356,22 +382,83 @@ export default function TransactionsPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 h-11 rounded-xl bg-slate-50 dark:bg-slate-800 border-2">
-                            <Filter className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Filtrar:</span>
-                        </div>
-                        <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-                            <SelectTrigger className="w-[150px] rounded-xl border-2 h-11 bg-slate-50 dark:bg-slate-800 font-bold">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="income">Ingresos</SelectItem>
-                                <SelectItem value="expense">Gastos</SelectItem>
-                            </SelectContent>
-                        </Select>
+                    
+                    {/* Date Filters */}
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="date"
+                            className="w-[140px] rounded-xl border-2 h-11 bg-slate-50 dark:bg-slate-800 text-xs font-medium"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <Input
+                            type="date"
+                            className="w-[140px] rounded-xl border-2 h-11 bg-slate-50 dark:bg-slate-800 text-xs font-medium"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                        />
                     </div>
+
+                        {/* Consolidated Filters Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-11 rounded-xl border-2 font-bold px-4 bg-slate-50 dark:bg-slate-800">
+                                    <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                                    Filtros Adicionales
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56 rounded-xl" align="end">
+                                <DropdownMenuLabel>Filtrar Transacciones</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                
+                                {/* Tipo Filter */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <span>Tipo de Movimiento</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="rounded-xl">
+                                        <DropdownMenuRadioGroup value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+                                            <DropdownMenuRadioItem value="all">Todos</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="income">Ingresos</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="expense">Gastos</DropdownMenuRadioItem>
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {/* Payment Method Filter */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <span>Método de Pago</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="rounded-xl">
+                                        <DropdownMenuRadioGroup value={paymentFilter} onValueChange={(v: any) => setPaymentFilter(v)}>
+                                            <DropdownMenuRadioItem value="all">Todos</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="cash">Efectivo</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="card">Tarjeta</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="transfer">Transferencia</DropdownMenuRadioItem>
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {/* Category Filter */}
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <span>Categoría</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="rounded-xl h-[300px] overflow-y-auto">
+                                        <DropdownMenuRadioGroup value={categoryFilter} onValueChange={(v: any) => setCategoryFilter(v)}>
+                                            <DropdownMenuRadioItem value="all">Todas</DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="sales">Ventas POS</DropdownMenuRadioItem>
+                                            {categories.map(cat => (
+                                                <DropdownMenuRadioItem key={cat.id} value={cat.id}>{cat.name}</DropdownMenuRadioItem>
+                                            ))}
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                 </CardContent>
             </Card>
 

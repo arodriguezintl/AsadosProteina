@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
     TrendingUp, ShoppingBag, 
     Loader2, Printer, ChevronLeft, ChevronRight, Store as StoreIcon, RotateCcw,
@@ -17,7 +16,7 @@ import { exportToExcel, exportToPDF } from '@/utils/export'
 import { ResponsiveContainer } from 'recharts'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RestockReport } from './RestockReport'
-import { PieChart, Pie, Cell, Legend, Tooltip } from 'recharts'
+import { Cell, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -30,6 +29,19 @@ import { useAuthStore } from '@/store/auth.store'
 import { useTicketPrint } from '@/hooks/useTicketPrint'
 import { PrintService } from '@/services/print.service'
 import { formatNumber } from '@/utils/format'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Filter } from 'lucide-react'
 
 export default function ReportsPage() {
     const [loading, setLoading] = useState(true)
@@ -45,6 +57,7 @@ export default function ReportsPage() {
     // Filter state
     const [selectedStoreId, setSelectedStoreId] = useState<string | 'all'>('00000000-0000-0000-0000-000000000001')
     const [storesList, setStoresList] = useState<any[]>([])
+    const [paymentFilter, setPaymentFilter] = useState<string>('all')
 
     // Stats
     const [salesStats, setSalesStats] = useState({ totalSales: 0, totalOrders: 0, avgTicket: 0 })
@@ -173,19 +186,52 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
-                    {isSuperAdmin && (
-                        <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Seleccionar Tienda" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Todas las tiendas</SelectItem>
-                                {storesList.map(store => (
-                                    <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
+                    {/* Consolidated Filters Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="h-8 rounded-lg border-2 font-bold px-4 bg-white hover:bg-slate-50">
+                                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                                Filtros Adicionales
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56 rounded-xl" align="end">
+                            <DropdownMenuLabel>Filtrar Reportes</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            
+                            {/* Sucursal Filter (Admin only) */}
+                            {isSuperAdmin && (
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <span>Sucursal</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuSubContent className="rounded-xl">
+                                        <DropdownMenuRadioGroup value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                                            <DropdownMenuRadioItem value="all">Todas las tiendas</DropdownMenuRadioItem>
+                                            {storesList.map(store => (
+                                                <DropdownMenuRadioItem key={store.id} value={store.id}>{store.name}</DropdownMenuRadioItem>
+                                            ))}
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                            )}
+
+                            {/* Payment Method Filter */}
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <span>Método de Pago</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent className="rounded-xl">
+                                    <DropdownMenuRadioGroup value={paymentFilter} onValueChange={setPaymentFilter}>
+                                        <DropdownMenuRadioItem value="all">Todos</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="cash">Efectivo</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="card">Tarjeta</DropdownMenuRadioItem>
+                                        <DropdownMenuRadioItem value="transfer">Transferencia</DropdownMenuRadioItem>
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+
+                        </DropdownMenuContent>
+                    </DropdownMenu>
 
                     <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl border border-slate-200 shadow-sm">
                         {[
@@ -225,7 +271,7 @@ export default function ReportsPage() {
 
                     <TabsContent value="overview" className="space-y-4">
                         {/* Key Metrics Cards */}
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                             <Card>
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Ventas Totales</CardTitle>
@@ -303,8 +349,8 @@ export default function ReportsPage() {
                                         </Button>
                                     </div>
                                 </CardHeader>
-                                <CardContent>
-                                    <Table>
+                                <CardContent className="overflow-x-auto">
+                                    <Table className="min-w-[600px]">
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Tienda</TableHead>
@@ -373,11 +419,11 @@ export default function ReportsPage() {
                                             </PDFDownloadLink>
                                         </div>
                                     </CardHeader>
-                                    <CardContent>
+                                    <CardContent className="overflow-x-auto">
                                         {topProducts.length === 0 ? (
                                             <p className="text-center text-muted-foreground py-4">No hay datos de ventas</p>
                                         ) : (
-                                            <Table>
+                                            <Table className="min-w-[400px]">
                                                 <TableHeader>
                                                     <TableRow>
                                                         <TableHead>Producto</TableHead>
@@ -411,32 +457,43 @@ export default function ReportsPage() {
                                                     <p className="text-muted-foreground">Sin datos de métodos de pago</p>
                                                 </div>
                                             ) : (
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie
-                                                            data={paymentMethodSales}
-                                                            cx="50%"
-                                                            cy="50%"
-                                                            labelLine={false}
-                                                            outerRadius={80}
-                                                            fill="#8884d8"
-                                                            dataKey="value"
-                                                            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                                    <BarChart 
+                                                        data={paymentMethodSales} 
+                                                        layout="vertical" 
+                                                        margin={{ left: -30, right: 30, top: 10, bottom: 10 }}
+                                                    >
+                                                        <XAxis type="number" hide />
+                                                        <YAxis 
+                                                            dataKey="name" 
+                                                            type="category" 
+                                                            width={120} 
+                                                            axisLine={false} 
+                                                            tickLine={false} 
+                                                            tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} 
+                                                        />
+                                                        <Tooltip
+                                                            cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                                                            formatter={(value) => [`$${formatNumber(Number(value))}`, 'Ventas']}
+                                                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                                                        />
+                                                        <Bar 
+                                                            dataKey="value" 
+                                                            radius={[0, 8, 8, 0]}
+                                                            barSize={28}
                                                         >
                                                             {paymentMethodSales.map((_entry, index) => (
                                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                                             ))}
-                                                        </Pie>
-                                                        <Tooltip formatter={(value) => `$${formatNumber(Number(value))}`} />
-                                                        <Legend />
-                                                    </PieChart>
+                                                        </Bar>
+                                                    </BarChart>
                                                 </ResponsiveContainer>
                                             )}
                                         </div>
 
                                         {paymentMethodSales.length > 0 && (
-                                            <div className="border rounded-lg overflow-hidden">
-                                                <Table>
+                                            <div className="border rounded-lg overflow-x-auto">
+                                                <Table className="min-w-[300px]">
                                                     <TableHeader className="bg-muted/50">
                                                         <TableRow>
                                                             <TableHead className="h-9">Método</TableHead>
@@ -491,8 +548,8 @@ export default function ReportsPage() {
                                         Detalle de Ventas Recientes
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    <Table>
+                                <CardContent className="overflow-x-auto">
+                                    <Table className="min-w-[800px]">
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Folio</TableHead>
@@ -505,6 +562,7 @@ export default function ReportsPage() {
                                         </TableHeader>
                                         <TableBody>
                                             {ordersList
+                                                .filter(o => paymentFilter === 'all' || o.payment_method === paymentFilter)
                                                 .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
                                                 .map((order) => (
                                                     <TableRow key={order.id}>
@@ -719,7 +777,7 @@ export default function ReportsPage() {
                                 if (!confirm('¿Seguro que deseas CANCELAR toda la orden? Esto restaurará el stock de TODO.')) return
                                 setIsCancelling(true)
                                 try {
-                                    await OrderService.cancelOrder(selectedOrder.id, user?.id || '', returnReason)
+                                    await OrderService.cancelOrder(selectedOrder.id, user?.id, returnReason)
                                     toast.success('Orden cancelada correctamente')
                                     setShowReturnDialog(false)
                                     loadReports()
@@ -740,7 +798,7 @@ export default function ReportsPage() {
                             onClick={async () => {
                                 setIsCancelling(true)
                                 try {
-                                    await OrderService.returnItems(selectedOrder.id, selectedItems, user?.id || '', returnReason)
+                                    await OrderService.returnItems(selectedOrder.id, selectedItems, user?.id, returnReason)
                                     toast.success('Devolución parcial procesada')
                                     setShowReturnDialog(false)
                                     loadReports()

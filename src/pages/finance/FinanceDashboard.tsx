@@ -4,11 +4,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { TrendingDown, TrendingUp, Wallet, DollarSign, ArrowUpRight, ArrowDownRight, Activity, Calendar } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
-import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts'
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, BarChart, Bar } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { formatNumber, formatPercent } from '@/utils/format'
+import { subDays } from 'date-fns'
+import { getMexicoDayString } from '@/utils/date'
 
 const COLORS = ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6']
 
@@ -25,6 +27,7 @@ export default function FinanceDashboard() {
     })
     const [monthlyData, setMonthlyData] = useState<any[]>([])
     const [expensesByCategory, setExpensesByCategory] = useState<any[]>([])
+    const [selectedDays, setSelectedDays] = useState<7 | 30 | 90>(30)
 
     const { storeId } = useAuthStore()
     const navigate = useNavigate()
@@ -33,17 +36,20 @@ export default function FinanceDashboard() {
         if (storeId) {
             loadData()
         }
-    }, [storeId])
+    }, [storeId, selectedDays])
 
     const loadData = async () => {
         try {
             if (!storeId) return
 
+            const start = getMexicoDayString(subDays(new Date(), selectedDays))
+            const end = getMexicoDayString(new Date())
+
             const [stats, breakdown, trends, categoryExpenses] = await Promise.all([
-                FinanceService.getFinancialStats(storeId),
-                FinanceService.getFinancialBreakdown(storeId),
-                FinanceService.getMonthlyTrends(storeId, 6),
-                FinanceService.getExpensesByCategory(storeId)
+                FinanceService.getFinancialStats(storeId, start, end),
+                FinanceService.getFinancialBreakdown(storeId), // Summary breakdown stays global or we could filter it too
+                FinanceService.getTrends(storeId, selectedDays),
+                FinanceService.getExpensesByCategory(storeId, start, end)
             ])
 
             setSummary({
@@ -115,7 +121,29 @@ export default function FinanceDashboard() {
                         <span className="text-sm font-medium">Resumen financiero consolidado</span>
                     </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-xl border border-slate-200 shadow-sm">
+                        {[
+                            { id: 7, label: '7d' },
+                            { id: 30, label: '30d' },
+                            { id: 90, label: '90d' }
+                        ].map((pill) => (
+                            <Button
+                                key={pill.id}
+                                variant={selectedDays === pill.id ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSelectedDays(pill.id as any)}
+                                className={cn(
+                                    "h-8 px-4 rounded-lg font-bold transition-all",
+                                    selectedDays === pill.id 
+                                        ? "bg-primary text-white shadow-md shadow-primary/20 scale-105" 
+                                        : "text-muted-foreground hover:bg-slate-100"
+                                )}
+                            >
+                                {pill.label}
+                            </Button>
+                        ))}
+                    </div>
                     <Button
                         variant="outline"
                         className="rounded-xl font-bold border-2 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -206,7 +234,7 @@ export default function FinanceDashboard() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                     <XAxis
-                                        dataKey="month"
+                                        dataKey="label"
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
@@ -240,26 +268,35 @@ export default function FinanceDashboard() {
                         {expensesByCategory.length > 0 ? (
                             <div className="h-[350px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie
-                                            data={expensesByCategory}
-                                            cx="50%"
-                                            cy="50%"
-                                            innerRadius={70}
-                                            outerRadius={100}
-                                            paddingAngle={5}
-                                            dataKey="value"
+                                    <BarChart 
+                                        data={expensesByCategory} 
+                                        layout="vertical" 
+                                        margin={{ left: -20, right: 30, top: 10, bottom: 10 }}
+                                    >
+                                        <XAxis type="number" hide />
+                                        <YAxis 
+                                            dataKey="name" 
+                                            type="category" 
+                                            width={120} 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} 
+                                        />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                                            formatter={(value: any) => [`$${formatNumber(Number(value))}`, 'Monto']}
+                                        />
+                                        <Bar 
+                                            dataKey="value" 
+                                            radius={[0, 10, 10, 0]}
+                                            barSize={24}
                                         >
                                             {expensesByCategory.map((_entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
-                                        </Pie>
-                                        <Tooltip
-                                            contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
-                                            formatter={(value: any) => [`$${formatNumber(Number(value))}`, 'Monto']}
-                                        />
-                                        <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                                    </PieChart>
+                                        </Bar>
+                                    </BarChart>
                                 </ResponsiveContainer>
                             </div>
                         ) : (

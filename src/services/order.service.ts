@@ -56,6 +56,9 @@ export const OrderService = {
 
         let rewardName = null;
         if (order.customer_id) {
+            // Increment overall total orders for the customer
+            await CustomerService.incrementTotalOrders(order.customer_id)
+
             if (order.order_type === 'delivery') {
                 const result = await CustomerService.incrementDeliverySales(order.customer_id)
                 if (result.rewardEarned) {
@@ -251,7 +254,7 @@ export const OrderService = {
         }))
     },
 
-    async cancelOrder(orderId: string, userId: string, reason: string) {
+    async cancelOrder(orderId: string, userId: string | undefined, reason: string) {
         // 1. Get order items
         const { data: items, error: itemsError } = await supabase
             .from('order_items')
@@ -269,7 +272,7 @@ export const OrderService = {
                 userId,
                 `Cancelación de orden ${orderId}: ${reason}`,
                 orderId,
-                'return'
+                'entry'
             )
         }
 
@@ -285,7 +288,7 @@ export const OrderService = {
         if (updateError) throw updateError
     },
 
-    async returnItems(orderId: string, itemIds: string[], userId: string, reason: string) {
+    async returnItems(orderId: string, itemIds: string[], userId: string | undefined, reason: string) {
         // 1. Get items to return
         const { data: items, error: itemsError } = await supabase
             .from('order_items')
@@ -303,7 +306,7 @@ export const OrderService = {
                 userId,
                 `Devolución de item en orden ${orderId}: ${reason}`,
                 orderId,
-                'return'
+                'entry'
             )
 
             // We update the quantity to 0 to "remove" it from the order effectively while keeping the record
@@ -311,6 +314,7 @@ export const OrderService = {
                 .from('order_items')
                 .update({
                     quantity: 0,
+                    subtotal: 0,
                     notes: `Devuelto: ${reason}`
                 })
                 .eq('id', item.id)

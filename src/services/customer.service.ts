@@ -5,16 +5,46 @@ export const CustomerService = {
     async getCustomers(storeId?: string) {
         let query = supabase
             .from('customers')
-            .select('*')
+            .select(`
+                *,
+                orders:orders(count)
+            `)
+            .eq('orders.status', 'completed')
 
         if (storeId) {
             query = query.eq('store_id', storeId)
         }
 
         const { data, error } = await query.order('full_name')
+        if (error) throw error
+
+        // Map data to ensure total_orders reflects the real count from the join
+        return (data as any[]).map(customer => ({
+            ...customer,
+            total_orders: customer.orders?.[0]?.count || 0
+        })) as Customer[]
+    },
+
+    async incrementTotalOrders(customerId: string) {
+        const { data: customer, error: getError } = await supabase
+            .from('customers')
+            .select('total_orders')
+            .eq('id', customerId)
+            .single()
+
+        if (getError) throw getError
+
+        const newTotal = (customer?.total_orders || 0) + 1
+
+        const { data, error } = await supabase
+            .from('customers')
+            .update({ total_orders: newTotal })
+            .eq('id', customerId)
+            .select()
+            .single()
 
         if (error) throw error
-        return data as Customer[]
+        return data as Customer
     },
 
     async getCustomerById(id: string) {
@@ -79,18 +109,22 @@ export const CustomerService = {
     async incrementDeliverySales(customerId: string) {
         const { data: customer, error: getError } = await supabase
             .from('customers')
-            .select('delivery_sales_count')
+            .select('delivery_sales_count, total_orders')
             .eq('id', customerId)
             .single()
 
         if (getError) throw getError
 
         const newCount = (customer?.delivery_sales_count || 0) + 1
+        const totalOrders = (customer as any)?.total_orders || 0
         const rewardEarned = newCount % 5 === 0
 
         const { data, error } = await supabase
             .from('customers')
-            .update({ delivery_sales_count: newCount })
+            .update({ 
+                delivery_sales_count: newCount,
+                total_orders: totalOrders + 1 
+            })
             .eq('id', customerId)
             .select()
             .single()
@@ -102,18 +136,22 @@ export const CustomerService = {
     async incrementPickupSales(customerId: string) {
         const { data: customer, error: getError } = await supabase
             .from('customers')
-            .select('pickup_sales_count')
+            .select('pickup_sales_count, total_orders')
             .eq('id', customerId)
             .single()
 
         if (getError) throw getError
 
         const newCount = (customer?.pickup_sales_count || 0) + 1
+        const totalOrders = (customer as any)?.total_orders || 0
         const rewardEarned = newCount % 5 === 0
 
         const { data, error } = await supabase
             .from('customers')
-            .update({ pickup_sales_count: newCount })
+            .update({ 
+                pickup_sales_count: newCount,
+                total_orders: totalOrders + 1
+            })
             .eq('id', customerId)
             .select()
             .single()
